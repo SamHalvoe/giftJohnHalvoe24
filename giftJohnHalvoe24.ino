@@ -2,6 +2,10 @@
 #include <U8g2lib.h>
 #include <tiny_code_reader.h>
 
+#include "gJH24_utility.h"
+#include "gJH24_WiFi.h"
+#include "gJH24_Time.h"
+
 #include "SimpleButton.h"
 
 const uint8_t OLED_WIDTH = 128;
@@ -35,6 +39,8 @@ void setup()
   Serial.begin(9600);
 
   while (not Serial) {}
+
+  Serial.println("setup started");
   
   oled.begin();
   Wire.begin();
@@ -53,20 +59,24 @@ void loop()
     onPressed();
   }
 
-  if (timeSinceCodeRead >= 200)
+  if (not isConnectedToWifi && timeSinceCodeRead >= 250)
   {
-    if (tiny_code_reader_read(&tinyCodeReaderResults))
+    if (tiny_code_reader_read(&tinyCodeReaderResults) &&
+        tinyCodeReaderResults.content_length > 0)
     {
-      if (tinyCodeReaderResults.content_length == 0)
-      {
-        Serial.println("No code found");
-      }
-      else
-      {
-        Serial.print("Found '");
-        Serial.print(reinterpret_cast<char*>(tinyCodeReaderResults.content_bytes));
-        Serial.println("'");
-      }
+      String qrCodeContent(reinterpret_cast<char*>(tinyCodeReaderResults.content_bytes));
+
+      Serial.print("Found '");
+      Serial.print(qrCodeContent);
+      Serial.println("'");
+
+      String ssid;
+      String password;
+
+      extractWiFiCredentials(qrCodeContent, ssid, password);
+      connectToWifi(ssid, password);
+
+      configurateTime();
     }
 
     timeSinceCodeRead = 0;
@@ -74,9 +84,12 @@ void loop()
 
   if (timeSinceOledUpdate >= 25)
   {
+    String timeString = getLocalTimeString();
+    Serial.println(timeString);
+
     oled.clearBuffer();
-    oled.setFont(u8g2_font_ncenB08_tr);
-    oled.drawStr(0, 10, "Hello World!");
+    oled.setFont(u8g2_font_mystery_quest_32_tn);
+    oled.drawStr(4, 48, timeString.c_str());
     oled.sendBuffer();
 
     timeSinceOledUpdate = 0;
