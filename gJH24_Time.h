@@ -8,6 +8,8 @@ constexpr const long GMT_OFFSET_SECONDS = 3600;
 constexpr const int DAYLIGHT_OFFSET_SECONDS = 3600;
 
 bool isTimeConfigured = false;
+bool gotIsCompleteHour = false;
+int lastCompleteHour = -1;
 
 void configurateTime()
 {
@@ -24,7 +26,7 @@ String getLocalTimeString()
 
   tm timeInfo;
 
-  if(not getLocalTime(&timeInfo))
+  if (not getLocalTime(&timeInfo))
   {
     return "TmErrGet";
   }
@@ -43,4 +45,36 @@ String getLocalTimeString()
   timeString.concat(timeInfo.tm_sec);
 
   return timeString;
+}
+
+bool isCompleteHour()
+{
+  if (not isTimeConfigured)
+  {
+    return false;
+  }
+
+  tm timeInfo;
+
+  if (getLocalTime(&timeInfo))
+  {
+    if (timeInfo.tm_min == 0 && not gotIsCompleteHour)
+    {
+      gotIsCompleteHour = true;
+
+      return true;
+    }
+  }
+
+  if (lastCompleteHour == -1)
+  {
+    lastCompleteHour = timeInfo.tm_hour;
+  }
+
+  if (lastCompleteHour != timeInfo.tm_hour)
+  {
+    gotIsCompleteHour = false;
+  }
+
+  return false;
 }

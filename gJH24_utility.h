@@ -44,37 +44,8 @@ std::vector<String> splitString(const String& in_string, const std::vector<char>
 
   if (indexFrom < in_string.length())
   {
-    stringList.emplace_back(in_string.substring(indexFrom, in_string.length() - 1));
+    stringList.emplace_back(in_string.substring(indexFrom, in_string.length()));
   }
 
   return stringList;
-}
-
-bool extractWiFiCredentials(const String& in_qrCodeContent, String& out_ssid, String& out_password)
-{
-  auto stringList = splitString(in_qrCodeContent, { ':', ';' });
-  
-  for (size_t index = 0; index < stringList.size(); ++index)
-  {
-    if (stringList[index] == "S")
-    {
-      ++index;
-
-      out_ssid = stringList[index];
-    }
-
-    if (stringList[index] == "P")
-    {
-      ++index;
-
-      out_password = stringList[index];
-    }
-
-    if (out_ssid.length() > 0 && out_password.length() > 0)
-    {
-      return true;
-    }
-  }
-
-  return false;
 }
