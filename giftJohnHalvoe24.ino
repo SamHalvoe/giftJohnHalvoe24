@@ -1,23 +1,13 @@
+#include "gJH24_def.h"
 #include "gJH24_utility.h"
+#include "gJH24_controller.h"
 #include "gJH24_oled.h"
 #include "gJH24_qrCode.h"
 #include "gJH24_WiFi.h"
 #include "gJH24_Time.h"
 #include "gJH24_bitcoinInfo.h"
 
-#include "SimpleButton.h"
-
-const uint8_t PIN_BUTTON = 12;
-SimpleButton button(PIN_BUTTON);
-
 String timeString;
-
-void onPressed()
-{
-  oled.setDisplayRotation(isOledMirrored ? U8G2_R0 : U8G2_MIRROR);
-
-  isOledMirrored = not isOledMirrored;
-}
 
 void setup()
 {
@@ -29,19 +19,19 @@ void setup()
   
   oled.begin();
   Wire.begin();
-  button.begin();
+  buttonA.begin();
+  buttonB.begin();
 
+  turnCodeReaderLedOff();
+  
   Serial.println("setup finished");
 }
 
 void loop()
 {
-  if (button.isPressed())
-  {
-    onPressed();
-  }
+  handleApp(currentAppMode);
 
-  if (not isConnectedToWifi)
+  /*if (not isConnectedToWifi)
   {
     String qrCodeContent = readCode();
     auto credentials = extractWiFiCredentials(qrCodeContent);
@@ -53,8 +43,10 @@ void loop()
     }
   }
 
-  timeString = getLocalTimeString();
-  //Serial.println(timeString);
+  timeString = getLocalTimeString();*/
 
-  updateOled(ScreenMode::bitcoin, "1,000,000");
+  updateOled(currentAppMode, "1,000,000");
+
+  Serial.print("currentAppMode: ");
+  Serial.println(static_cast<int16_t>(currentAppMode));
 }

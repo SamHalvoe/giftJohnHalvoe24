@@ -1,9 +1,18 @@
-#include "binary.h"
+/*
+
+for fonts
+- u8g2_font_streamline_interface_essential_other_t
+- u8g2_font_streamline_phone_t
+see https://streamlinehq.com
+
+*/
+
 #pragma once
 
 #include <elapsedMillis.h>
 #include <U8g2lib.h>
 
+#include "gJH24_def.h"
 #include "gJH24_utility.h"
 
 const uint8_t OLED_WIDTH = 128;
@@ -20,11 +29,16 @@ bool isOledMirrored = false;
 const uint16_t OLED_UPDATE_INTERVAL = 25; // ms
 elapsedMillis timeSinceOledUpdate = OLED_UPDATE_INTERVAL;
 
-enum class ScreenMode
+constexpr const uint16_t iconQRCode = 48 + 6;
+constexpr const uint16_t iconFloppy = 48 + 3;
+constexpr const uint16_t yOffsetIcon = 32;
+
+void toggleMirrorOled()
 {
-  clock = 0,
-  bitcoin = 1
-};
+  oled.setDisplayRotation(isOledMirrored ? U8G2_R0 : U8G2_MIRROR);
+
+  isOledMirrored = not isOledMirrored;
+}
 
 void drawBitcoinCharacter(u8g2_uint_t in_x, u8g2_uint_t in_y)
 {
@@ -36,7 +50,76 @@ void drawBitcoinCharacter(u8g2_uint_t in_x, u8g2_uint_t in_y)
   oled.drawBox(in_x + 6, in_y, 2, 2);
 }
 
-void updateOled(ScreenMode in_screenMode, const String& in_string)
+void drawStringXCenter(uint16_t in_y, const char* in_string)
+{
+  const uint16_t stringWidth = oled.getStrWidth(in_string);
+  oled.drawStr((128 - stringWidth) / 2, in_y, in_string);
+}
+
+void updateScreenConfig()
+{
+  constexpr const uint16_t xLeftCenter = (64 - 21) / 2;
+  constexpr const uint16_t xRightCenter = (196 - 21) / 2;
+
+  oled.setFont(u8g2_font_streamline_phone_t);
+  oled.drawGlyph(xLeftCenter, yOffsetIcon, iconQRCode);
+  oled.setFont(u8g2_font_streamline_interface_essential_other_t);
+  oled.drawGlyph(xRightCenter, yOffsetIcon, iconFloppy);
+
+  oled.setFont(u8g2_font_glasstown_nbp_tr);
+  drawStringXCenter(48, "Select credentials source;");
+  drawStringXCenter(60, "Press left or right;");
+}
+
+void updateScreenReadWiFiQRCode()
+{
+  constexpr const uint16_t xCenter = (128 - 21) / 2;
+
+  oled.setFont(u8g2_font_streamline_phone_t);
+  oled.drawGlyph(xCenter, yOffsetIcon, iconQRCode);
+  
+  oled.setFont(u8g2_font_glasstown_nbp_tr);
+  drawStringXCenter(48, "Read WiFi QR Code;");
+}
+
+void updateScreenBitcoin(const String& in_string)
+{
+  oled.setFont(u8g2_font_chargen_92_mr);
+  const auto characterWidth = oled.getStrWidth("c");
+  const uint8_t spaceWidth = 4;
+  const uint8_t xOffset = 10;
+  const uint8_t yOffsetA = 24;
+  const uint8_t yOffsetB = yOffsetA + 8 + 14;
+
+  oled.drawStr(xOffset + spaceWidth + (3 * characterWidth), yOffsetA, "1");
+  drawBitcoinCharacter(xOffset + (2 * spaceWidth) + (4 * characterWidth), yOffsetA);
+
+  auto numberStringList = splitString(in_string, { ',' });
+  size_t index = 0;
+
+  if (numberStringList.size() >= 3)
+  {
+    oled.drawStr(xOffset, yOffsetB, numberStringList[index].c_str());
+
+    ++index;
+  }
+
+  if (numberStringList.size() >= 2)
+  {
+    oled.drawStr(xOffset + spaceWidth + ((1 + (3 - numberStringList[index].length())) * characterWidth), yOffsetB, numberStringList[index].c_str());
+
+    ++index;
+  }
+
+  if (numberStringList.size() >= 1)
+  {
+    oled.drawStr(xOffset + (2 * spaceWidth) + ((4 + (3 - numberStringList[index].length())) * characterWidth), yOffsetB, numberStringList[index].c_str());
+  }
+  
+  oled.drawStr(xOffset + (3 * spaceWidth) + (7 * characterWidth), yOffsetB, "$");
+}
+
+void updateOled(AppMode in_appMode, const String& in_string)
 {
   if (timeSinceOledUpdate >= OLED_UPDATE_INTERVAL)
   {
@@ -45,41 +128,23 @@ void updateOled(ScreenMode in_screenMode, const String& in_string)
     //oled.setFont(u8g2_font_mystery_quest_32_tn);
     //oled.drawStr(4, 48, in_string.c_str());
     
-    if (in_screenMode == ScreenMode::bitcoin)
+    switch (in_appMode)
     {
-      oled.setFont(u8g2_font_chargen_92_mr);
-      const auto characterWidth = oled.getStrWidth("c");
-      const uint8_t spaceWidth = 4;
-      const uint8_t xOffset = 10;
-      const uint8_t yOffsetA = 24;
-      const uint8_t yOffsetB = yOffsetA + 8 + 14;
+      case AppMode::config:
+        updateScreenConfig();
+      break;
 
-      oled.drawStr(xOffset + spaceWidth + (3 * characterWidth), yOffsetA, "1");
-      drawBitcoinCharacter(xOffset + (2 * spaceWidth) + (4 * characterWidth), yOffsetA);
+      case AppMode::readWiFiQRCode:
+        updateScreenReadWiFiQRCode();
+      break;
 
-      auto numberStringList = splitString(in_string, { ',' });
-      size_t index = 0;
+      case AppMode::loadWiFiData:
+        
+      break;
 
-      if (numberStringList.size() >= 3)
-      {
-        oled.drawStr(xOffset, yOffsetB, numberStringList[index].c_str());
-
-        ++index;
-      }
-
-      if (numberStringList.size() >= 2)
-      {
-        oled.drawStr(xOffset + spaceWidth + ((1 + (3 - numberStringList[index].length())) * characterWidth), yOffsetB, numberStringList[index].c_str());
-
-        ++index;
-      }
-
-      if (numberStringList.size() >= 1)
-      {
-        oled.drawStr(xOffset + (2 * spaceWidth) + ((4 + (3 - numberStringList[index].length())) * characterWidth), yOffsetB, numberStringList[index].c_str());
-      }
-      
-      oled.drawStr(xOffset + (3 * spaceWidth) + (7 * characterWidth), yOffsetB, "$");
+      case AppMode::bitcoin:
+        updateScreenBitcoin(in_string);
+      break;
     }
 
     oled.sendBuffer();
