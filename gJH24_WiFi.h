@@ -4,8 +4,6 @@
 
 #include "gJH24_utility.h"
 
-bool isConnectedToWifi = false;
-
 struct WiFiCredentials
 {
   public:
@@ -46,20 +44,12 @@ WiFiCredentials extractWiFiCredentials(const String& in_qrCodeContent)
   return credentials;
 }
 
-void connectToWifi(const WiFiCredentials& in_credentials)
+bool connectToWifi(const WiFiCredentials& in_credentials)
 {
-  Serial.println("begin - connectToWifi");
+  return WiFi.begin(in_credentials.m_ssid, in_credentials.m_password) == WL_CONNECTED;
+}
 
-  WiFi.begin(in_credentials.m_ssid, in_credentials.m_password);
-
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    Serial.print(".");
-    delay(500);
-  }
-
-  isConnectedToWifi = true;
-
-  Serial.println();
-  Serial.println("end - connectToWifi");
+bool isConnectedToWifi()
+{
+  return WiFi.status() == WL_CONNECTED;
 }

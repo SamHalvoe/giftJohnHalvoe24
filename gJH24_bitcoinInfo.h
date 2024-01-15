@@ -11,7 +11,7 @@ String bitcoinPrice;
 
 String getBitcoinPrice()
 {
-  if (not isConnectedToWifi)
+  if (not isConnectedToWifi())
   {
     return "BTCErrNoWiFi";
   }

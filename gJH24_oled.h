@@ -82,6 +82,33 @@ void updateScreenReadWiFiQRCode()
   drawStringXCenter(48, "Read WiFi QR Code;");
 }
 
+void updateScreenConnectToWiFi(uint8_t in_attemptCount)
+{
+  oled.setFont(u8g2_font_glasstown_nbp_tr);
+  drawStringXCenter(32, "Connect to WiFi;");
+
+  String dots(".");
+
+  for (uint8_t index = 0; index < in_attemptCount; ++index)
+  {
+    dots.concat(".");
+  }
+
+  drawStringXCenter(48, dots.c_str());
+}
+
+void updateScreenConnectToWiFiFailed()
+{
+  drawStringXCenter(32, "Connection to WiFi failed;");
+  drawStringXCenter(48, "Press any button to continue;");
+}
+
+void updateScreenClock(const String& in_string)
+{
+  oled.setFont(u8g2_font_mystery_quest_32_tn);
+  drawStringXCenter(40, in_string.c_str());
+}
+
 void updateScreenBitcoin(const String& in_string)
 {
   oled.setFont(u8g2_font_chargen_92_mr);
@@ -119,14 +146,11 @@ void updateScreenBitcoin(const String& in_string)
   oled.drawStr(xOffset + (3 * spaceWidth) + (7 * characterWidth), yOffsetB, "$");
 }
 
-void updateOled(AppMode in_appMode, const String& in_string)
+void updateOled(AppMode in_appMode, const String& in_string, int32_t in_integer)
 {
   if (timeSinceOledUpdate >= OLED_UPDATE_INTERVAL)
   {
     oled.clearBuffer();
-
-    //oled.setFont(u8g2_font_mystery_quest_32_tn);
-    //oled.drawStr(4, 48, in_string.c_str());
     
     switch (in_appMode)
     {
@@ -140,6 +164,18 @@ void updateOled(AppMode in_appMode, const String& in_string)
 
       case AppMode::loadWiFiData:
         
+      break;
+
+      case AppMode::connectToWiFi:
+        updateScreenConnectToWiFi(in_integer);
+      break;
+
+      case AppMode::connectToWiFiFailed:
+        updateScreenConnectToWiFiFailed();
+      break;
+
+      case AppMode::clock:
+        updateScreenClock(in_string);
       break;
 
       case AppMode::bitcoin:
