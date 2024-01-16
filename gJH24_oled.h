@@ -9,6 +9,8 @@ see https://streamlinehq.com
 
 #pragma once
 
+#include <vector>
+
 #include <elapsedMillis.h>
 #include <U8g2lib.h>
 
@@ -80,6 +82,22 @@ void updateScreenReadWiFiQRCode()
   
   oled.setFont(u8g2_font_glasstown_nbp_tr);
   drawStringXCenter(48, "Read WiFi QR Code;");
+  drawStringXCenter(60, "Press right to cancle;");
+}
+
+void updateScreenLoadWiFiCredentials(const CredentialsListPtr in_credentialListPtr)
+{
+  if (not in_credentialListPtr)
+  {
+    constexpr const uint16_t xCenter = (128 - 21) / 2;
+
+    oled.setFont(u8g2_font_streamline_interface_essential_other_t);
+    oled.drawGlyph(xCenter, yOffsetIcon, iconFloppy);
+    
+    oled.setFont(u8g2_font_glasstown_nbp_tr);
+    drawStringXCenter(48, "No saved credentials;");
+    drawStringXCenter(60, "Press left to return;");
+  }
 }
 
 void updateScreenConnectToWiFi(uint8_t in_attemptCount)
@@ -146,7 +164,7 @@ void updateScreenBitcoin(const String& in_string)
   oled.drawStr(xOffset + (3 * spaceWidth) + (7 * characterWidth), yOffsetB, "$");
 }
 
-void updateOled(AppMode in_appMode, const String& in_string, int32_t in_integer)
+void updateOled(AppMode in_appMode, const String& in_string, int32_t in_integer, const CredentialsListPtr in_credentialListPtr)
 {
   if (timeSinceOledUpdate >= OLED_UPDATE_INTERVAL)
   {
@@ -162,8 +180,8 @@ void updateOled(AppMode in_appMode, const String& in_string, int32_t in_integer)
         updateScreenReadWiFiQRCode();
       break;
 
-      case AppMode::loadWiFiData:
-        
+      case AppMode::loadWiFiCredentials:
+        updateScreenLoadWiFiCredentials(in_credentialListPtr);
       break;
 
       case AppMode::connectToWiFi:

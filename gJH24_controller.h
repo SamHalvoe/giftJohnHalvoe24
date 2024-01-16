@@ -2,6 +2,7 @@
 
 #include "gJH24_def.h"
 #include "gJH24_qrCode.h"
+#include "gJH24_eeprom.h"
 #include "gJH24_WiFi.h"
 #include "gJH24_Time.h"
 #include "gJH24_bitcoinInfo.h"
@@ -17,7 +18,10 @@ SimpleButton buttonB(PIN_BUTTON_B);
 WiFiCredentials currentCredentials;
 uint8_t connectionAttemptCount = 0;
 elapsedMillis timeSinceWiFiConnectionCheck;
+CredentialsListPtr credentialsListPtr;
+
 String timeString;
+String bitcoinString;
 
 void handleConfig()
 {
@@ -29,12 +33,19 @@ void handleConfig()
   }
   else if (buttonB.isPressed())
   {
-    currentAppMode = AppMode::loadWiFiData;
+    credentialsListPtr = readCredentialsList();
+
+    currentAppMode = AppMode::loadWiFiCredentials;
   }
 }
 
 void handleReadWiFiQRCode()
 {
+  if (buttonB.isPressed())
+  {
+    currentAppMode = AppMode::config;
+  }
+
   String qrCodeContent = readQRCode();
 
   if (qrCodeContent.length() == 0)
@@ -53,13 +64,23 @@ void handleReadWiFiQRCode()
   }
 }
 
+void handleLoadWiFiCredentials()
+{
+  if (buttonA.isPressed())
+  {
+    credentialsListPtr.reset();
+
+    currentAppMode = AppMode::config;
+  }
+}
+
 void handleConnectToWiFi()
 {
   if (timeSinceWiFiConnectionCheck >= 500)
   {
     if (isConnectedToWifi())
     {
-      //saveWiFiCredentials(credentials);
+      saveCredentials(currentCredentials);
       configurateTime();
       currentAppMode = AppMode::clock;
     }
@@ -99,7 +120,7 @@ const String& getCurrentModeString(AppMode in_appMode)
     break;
 
     case AppMode::bitcoin:
-      return "1,000,000";
+      return bitcoinString;
     break;
   }
 
@@ -118,8 +139,8 @@ void handleApp(AppMode in_appMode)
       handleReadWiFiQRCode();
     break;
 
-    case AppMode::loadWiFiData:
-      
+    case AppMode::loadWiFiCredentials:
+      handleLoadWiFiCredentials();
     break;
 
     case AppMode::connectToWiFi:
@@ -132,6 +153,10 @@ void handleApp(AppMode in_appMode)
     
     case AppMode::clock:
       handleClock();
+    break;
+
+    case AppMode::bitcoin:
+      
     break;
   }
 }

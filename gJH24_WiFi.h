@@ -2,15 +2,8 @@
 
 #include <WiFi.h>
 
+#include "gJH24_def.h"
 #include "gJH24_utility.h"
-
-struct WiFiCredentials
-{
-  public:
-    bool m_isComplete = false;
-    String m_ssid;
-    String m_password;
-};
 
 WiFiCredentials extractWiFiCredentials(const String& in_qrCodeContent)
 {

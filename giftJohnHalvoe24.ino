@@ -13,6 +13,7 @@ void setup()
   Wire.begin();
   buttonA.begin();
   buttonB.begin();
+  beginEeprom();
 
   turnCodeReaderLedOff();
   
@@ -22,7 +23,7 @@ void setup()
 void loop()
 {
   handleApp(currentAppMode);
-  updateOled(currentAppMode, getCurrentModeString(currentAppMode), connectionAttemptCount);
+  updateOled(currentAppMode, getCurrentModeString(currentAppMode), connectionAttemptCount, credentialsListPtr);
 
   //Serial.print("currentAppMode: ");
   //Serial.println(static_cast<int16_t>(currentAppMode));
