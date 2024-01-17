@@ -40,13 +40,13 @@ CredentialsListPtr mockCredentialsListPtr()
 
 void handleConfig()
 {
-  if (buttonA.isJustReleased())
+  if (buttonA.wasReleased())
   {
     turnCodeReaderLedOn();
 
     currentAppMode = AppMode::readWiFiQRCode;
   }
-  else if (buttonB.isJustReleased())
+  else if (buttonB.wasReleased())
   {
     currentCredentialsListPtr = mockCredentialsListPtr();
     //currentCredentialsListPtr = readCredentialsList();
@@ -57,7 +57,7 @@ void handleConfig()
 
 void handleReadWiFiQRCode()
 {
-  if (buttonB.isJustReleased())
+  if (buttonB.wasReleased())
   {
     currentAppMode = AppMode::config;
   }
@@ -84,11 +84,11 @@ void handleLoadWiFiCredentials()
 {
   if (currentCredentialsListPtr && currentCredentialsListPtr->size() > 0)
   {
-    if (buttonA.isJustReleased())
+    if (buttonA.wasReleased())
     {
       decrementCredentialsSelectionIndex();
     }
-    else if (buttonB.isJustReleased())
+    else if (buttonB.wasReleased())
     {
       incrementCredentialsSelectionIndex(currentCredentialsListPtr->size());
     }
@@ -99,7 +99,7 @@ void handleLoadWiFiCredentials()
       currentAppMode = AppMode::connectToWiFi;
     }
   }
-  else if (buttonA.isJustReleased())
+  else if (buttonA.wasReleased())
   {
     currentAppMode = AppMode::config;
   }
@@ -131,7 +131,7 @@ void handleConnectToWiFi()
 
 void handleConnectToWiFiFailed()
 {
-  if (buttonA.isJustReleased() || buttonB.isJustReleased())
+  if (buttonA.wasReleased() || buttonB.wasReleased())
   {
     currentAppMode = AppMode::config;
   }

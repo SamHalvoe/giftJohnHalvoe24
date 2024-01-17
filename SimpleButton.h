@@ -4,70 +4,95 @@
 
 class SimpleButton
 {
+  public:
+    enum class PinState : int8_t
+    {
+      low = LOW,
+      high = HIGH
+    };
+
   private:
     uint8_t m_pin;
-    int8_t m_pinStatePressed;
-    int8_t m_currentPinState;
-    int8_t m_lastPinState;
-    uint8_t m_debounceTime;
+    PinState m_pinStatePressed;
+    PinState m_currentPinState;
+    PinState m_lastPinState;
+    bool m_wasPressed;
+    bool m_wasReleased;
+    uint16_t m_debounceTime;
     elapsedMillis m_timeSinceEvent;
 
+  private:
+    PinState invertPinState(PinState in_pinState) const
+    {
+      return (in_pinState == PinState::high ?
+                PinState::low :
+                PinState::high);
+    }
+
+    int getPinMode() const
+    {
+      return (m_pinStatePressed == PinState::high ?
+                INPUT :
+                INPUT_PULLUP);
+    }
+
   public:
-    SimpleButton(uint8_t in_pin, uint8_t in_debounceTime = 40, bool in_isHighPressed = false) :
+    SimpleButton(uint8_t in_pin, uint16_t in_debounceTime = 40, PinState in_pinStatePressed = PinState::low) :
       m_pin(in_pin),
-      m_pinStatePressed(in_isHighPressed ? HIGH : LOW),
-      m_currentPinState(in_isHighPressed ? LOW : HIGH),
-      m_lastPinState(in_isHighPressed ? LOW : HIGH),
+      m_pinStatePressed(in_pinStatePressed),
+      m_currentPinState(invertPinState(in_pinStatePressed)),
+      m_lastPinState(invertPinState(in_pinStatePressed)),
+      m_wasPressed(false),
+      m_wasReleased(false),
       m_debounceTime(in_debounceTime),
       m_timeSinceEvent(in_debounceTime)
     {}
 
     void begin()
     {
-      pinMode(m_pin, (m_pinStatePressed == HIGH ? INPUT : INPUT_PULLUP));
+      pinMode(m_pin, getPinMode());
     }
 
     void update()
     {
       m_lastPinState = m_currentPinState;
-      m_currentPinState = digitalRead(m_pin);
+      m_currentPinState = static_cast<PinState>(digitalRead(m_pin));
+
+      if (m_timeSinceEvent >= m_debounceTime && hasStateChanged())
+      {
+        m_wasPressed = isPressed();
+        m_wasReleased = isReleased();
+        m_timeSinceEvent = 0;
+      }
+      else
+      {
+        m_wasPressed = false;
+        m_wasReleased = false;
+      }
     }
 
-    bool isPressed()
+    bool hasStateChanged() const
+    {
+      return m_currentPinState != m_lastPinState;
+    }
+
+    bool isPressed() const
     {
       return m_currentPinState == m_pinStatePressed;
     }
 
-    bool isReleased()
+    bool isReleased() const
     {
       return m_currentPinState != m_pinStatePressed;
     }
 
-    bool isJustPressed()
+    bool wasPressed() const
     {
-      if (m_timeSinceEvent >= m_debounceTime &&
-          m_currentPinState != m_lastPinState &&
-          m_currentPinState == m_pinStatePressed)
-      {
-        m_timeSinceEvent = 0;
-
-        return true;
-      }
-
-      return false;
+      return m_wasPressed;
     }
 
-    bool isJustReleased()
+    bool wasReleased() const
     {
-      if (m_timeSinceEvent >= m_debounceTime &&
-          m_currentPinState != m_lastPinState &&
-          m_currentPinState != m_pinStatePressed)
-      {
-        m_timeSinceEvent = 0;
-
-        return true;
-      }
-
-      return false;
+      return m_wasReleased;
     }
 };
