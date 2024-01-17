@@ -165,6 +165,9 @@ const String& getCurrentModeString(AppMode in_appMode)
 
 void handleApp(AppMode in_appMode)
 {
+  buttonA.update();
+  buttonB.update();
+
   switch (in_appMode)
   {
     case AppMode::config:
