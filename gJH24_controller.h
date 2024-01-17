@@ -6,6 +6,7 @@
 #include "gJH24_WiFi.h"
 #include "gJH24_Time.h"
 #include "gJH24_bitcoinInfo.h"
+#include "gJH24_oled.h"
 
 #include "SimpleButton.h"
 
@@ -18,22 +19,37 @@ SimpleButton buttonB(PIN_BUTTON_B);
 WiFiCredentials currentCredentials;
 uint8_t connectionAttemptCount = 0;
 elapsedMillis timeSinceWiFiConnectionCheck;
-CredentialsListPtr credentialsListPtr;
+CredentialsListPtr currentCredentialsListPtr;
 
-String timeString;
+const uint16_t TIME_UPDATE_INTERVAL = 300;
+elapsedMillis timeSinceTimeUpdate = TIME_UPDATE_INTERVAL;
+
 String bitcoinString;
+
+CredentialsListPtr mockCredentialsListPtr()
+{
+  CredentialsListPtr credentialsListPtr = std::make_shared<CredentialsList>();
+
+  for (uint32_t index = 0; index < 10; ++index)
+  {
+    credentialsListPtr->emplace_back(true, String("ssid_") + index, String("password_") + index);
+  }
+
+  return credentialsListPtr;
+}
 
 void handleConfig()
 {
-  if (buttonA.isPressed())
+  if (buttonA.isJustReleased())
   {
     turnCodeReaderLedOn();
 
     currentAppMode = AppMode::readWiFiQRCode;
   }
-  else if (buttonB.isPressed())
+  else if (buttonB.isJustReleased())
   {
-    credentialsListPtr = readCredentialsList();
+    currentCredentialsListPtr = mockCredentialsListPtr();
+    //currentCredentialsListPtr = readCredentialsList();
 
     currentAppMode = AppMode::loadWiFiCredentials;
   }
@@ -41,7 +57,7 @@ void handleConfig()
 
 void handleReadWiFiQRCode()
 {
-  if (buttonB.isPressed())
+  if (buttonB.isJustReleased())
   {
     currentAppMode = AppMode::config;
   }
@@ -66,10 +82,25 @@ void handleReadWiFiQRCode()
 
 void handleLoadWiFiCredentials()
 {
-  if (buttonA.isPressed())
+  if (currentCredentialsListPtr && currentCredentialsListPtr->size() > 0)
   {
-    credentialsListPtr.reset();
-
+    if (buttonA.isJustReleased())
+    {
+      decrementCredentialsSelectionIndex();
+    }
+    else if (buttonB.isJustReleased())
+    {
+      incrementCredentialsSelectionIndex(currentCredentialsListPtr->size());
+    }
+    else if (buttonA.isPressed() && buttonB.isPressed())
+    {
+      connectToWifi(currentCredentialsListPtr->at(credentialsSelectionIndex));
+      connectionAttemptCount = 0;
+      currentAppMode = AppMode::connectToWiFi;
+    }
+  }
+  else if (buttonA.isJustReleased())
+  {
     currentAppMode = AppMode::config;
   }
 }
@@ -100,7 +131,7 @@ void handleConnectToWiFi()
 
 void handleConnectToWiFiFailed()
 {
-  if (buttonA.isPressed() || buttonB.isPressed())
+  if (buttonA.isJustReleased() || buttonB.isJustReleased())
   {
     currentAppMode = AppMode::config;
   }
@@ -108,7 +139,12 @@ void handleConnectToWiFiFailed()
 
 void handleClock()
 {
-  timeString = getLocalTimeString();
+  if (timeSinceTimeUpdate >= TIME_UPDATE_INTERVAL)
+  {
+    updateLocalTimeString();
+    
+    timeSinceTimeUpdate = 0;
+  }
 }
 
 const String& getCurrentModeString(AppMode in_appMode)

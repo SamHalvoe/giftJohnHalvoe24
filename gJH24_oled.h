@@ -35,6 +35,36 @@ constexpr const uint16_t iconQRCode = 48 + 6;
 constexpr const uint16_t iconFloppy = 48 + 3;
 constexpr const uint16_t yOffsetIcon = 32;
 
+size_t credentialsSelectionIndex = 0;
+size_t credentialsPageIndex = 0;
+const size_t credentialsPageSize = 4;
+
+void incrementCredentialsSelectionIndex(size_t in_credentialListSize)
+{
+  if (credentialsSelectionIndex < in_credentialListSize - 1)
+  {
+    ++credentialsSelectionIndex;
+
+    if (credentialsSelectionIndex % credentialsPageSize == 0)
+    {
+      ++credentialsPageIndex;
+    }
+  }
+}
+
+void decrementCredentialsSelectionIndex()
+{
+  if (credentialsSelectionIndex > 0)
+  {
+    --credentialsSelectionIndex;
+
+    if ((credentialsSelectionIndex + 1) % credentialsPageSize == 0)
+    {
+      --credentialsPageIndex;
+    }
+  }
+}
+
 void toggleMirrorOled()
 {
   oled.setDisplayRotation(isOledMirrored ? U8G2_R0 : U8G2_MIRROR);
@@ -85,18 +115,58 @@ void updateScreenReadWiFiQRCode()
   drawStringXCenter(60, "Press right to cancle;");
 }
 
+void drawStringSSID(size_t in_index, const String& in_ssid, bool in_isSSIDSelected)
+{
+  const u8g2_uint_t stringPositionY = in_index * 12;
+
+  if (in_isSSIDSelected)
+  {
+    oled.drawBox(3, 6 + stringPositionY, oled.getStrWidth(in_ssid.c_str()) + 2, 11);
+    oled.setDrawColor(0);
+  }
+
+  oled.drawStr(4, 16 + stringPositionY, in_ssid.c_str());
+  
+  if (in_isSSIDSelected)
+  {
+    oled.setDrawColor(1);
+  }
+}
+
+void drawScreenLoadWiFiCredentials(const CredentialsList& in_credentialList)
+{
+  oled.setFont(u8g2_font_glasstown_nbp_tr);
+
+  const size_t offset = credentialsPageIndex * credentialsPageSize;
+
+  for (size_t index = 0; index < credentialsPageSize && offset + index < in_credentialList.size(); ++index)
+  {
+    drawStringSSID(index, in_credentialList[offset + index].m_ssid,
+                   offset + index == credentialsSelectionIndex);
+  }
+}
+
+void drawScreenLoadWiFiCredentialsEmpty()
+{
+  constexpr const uint16_t xCenter = (128 - 21) / 2;
+
+  oled.setFont(u8g2_font_streamline_interface_essential_other_t);
+  oled.drawGlyph(xCenter, yOffsetIcon, iconFloppy);
+  
+  oled.setFont(u8g2_font_glasstown_nbp_tr);
+  drawStringXCenter(48, "No saved credentials;");
+  drawStringXCenter(60, "Press left to return;");
+}
+
 void updateScreenLoadWiFiCredentials(const CredentialsListPtr in_credentialListPtr)
 {
-  if (not in_credentialListPtr)
+  if (in_credentialListPtr)
   {
-    constexpr const uint16_t xCenter = (128 - 21) / 2;
-
-    oled.setFont(u8g2_font_streamline_interface_essential_other_t);
-    oled.drawGlyph(xCenter, yOffsetIcon, iconFloppy);
-    
-    oled.setFont(u8g2_font_glasstown_nbp_tr);
-    drawStringXCenter(48, "No saved credentials;");
-    drawStringXCenter(60, "Press left to return;");
+    drawScreenLoadWiFiCredentials(*in_credentialListPtr);
+  }
+  else
+  {
+    drawScreenLoadWiFiCredentialsEmpty();
   }
 }
 

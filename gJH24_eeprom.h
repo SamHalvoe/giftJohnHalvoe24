@@ -22,10 +22,6 @@ String readMark()
     mark.concat(static_cast<char>(eeprom.read(index)));
   }
 
-  Serial.println();
-  Serial.println(mark);
-  Serial.println();
-
   return mark;
 }
 
@@ -54,13 +50,21 @@ bool beginEeprom()
   EEPROM_FIRST_CREDENTIAL_ADDRESS = EEPROM_CREDENTIAL_COUNT_ADDRESS + sizeof(credentialCount);
   isEepromInitialised = true;
 
+  Serial.println();
+  Serial.print("isEepromInitialised: ");
+  Serial.println(isEepromInitialised);
+  Serial.println();
+  Serial.print("credentialCount: ");
+  Serial.println(credentialCount);
+  Serial.println();
+
   return true;
 }
 
 bool writeCredentials(uint32_t in_credentialIndex, const WiFiCredentials& in_credentials)
 {
   if (not isEepromInitialised ||
-      in_credentialIndex >= credentialCount ||
+      in_credentialIndex > credentialCount ||
       not in_credentials.m_isComplete ||
       in_credentials.m_ssid.length() > EEPROM_FIELD_WIDTH - 1 ||
       in_credentials.m_password.length() > EEPROM_FIELD_WIDTH - 1)
@@ -87,6 +91,10 @@ bool appendCredentials(const WiFiCredentials& in_credentials)
 
 WiFiCredentials readCredentials(uint32_t in_credentialIndex)
 {
+  Serial.println();
+  Serial.println("readCredentials()");
+  Serial.println();
+
   if (not isEepromInitialised ||
       in_credentialIndex >= credentialCount)
   {
@@ -98,8 +106,16 @@ WiFiCredentials readCredentials(uint32_t in_credentialIndex)
   uint32_t address = EEPROM_FIRST_CREDENTIAL_ADDRESS + (in_credentialIndex * EEPROM_CREDENTIAL_WIDTH);
   eeprom.getString(address, credentials.m_ssid);
   address = address + EEPROM_FIELD_WIDTH;
-  eeprom.getString(address + EEPROM_FIELD_WIDTH, credentials.m_password);
+  eeprom.getString(address, credentials.m_password);
   credentials.m_isComplete = true;
+
+  Serial.println();
+  Serial.print("credentials.m_ssid: ");
+  Serial.println(credentials.m_ssid);
+  Serial.println();
+  Serial.print("credentials.m_password: ");
+  Serial.println(credentials.m_password);
+  Serial.println();
 
   return credentials;
 }
@@ -126,11 +142,14 @@ bool saveCredentials(const WiFiCredentials& in_credentials)
 {
   CredentialsListPtr credentialsListPtr = readCredentialsList();
 
-  for (size_t index = 0; index < credentialsListPtr->size(); ++index)
+  if (credentialsListPtr)
   {
-    if (credentialsListPtr->at(index).m_ssid == in_credentials.m_ssid)
+    for (size_t index = 0; index < credentialsListPtr->size(); ++index)
     {
-      return writeCredentials(index, in_credentials);
+      if (credentialsListPtr->at(index).m_ssid == in_credentials.m_ssid)
+      {
+        return writeCredentials(index, in_credentials);
+      }
     }
   }
 

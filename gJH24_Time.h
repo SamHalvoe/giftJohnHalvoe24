@@ -11,27 +11,29 @@ bool isTimeConfigured = false;
 bool gotIsCompleteHour = false;
 int lastCompleteHour = -1;
 
+String timeString = "TmUnset";
+
 void configurateTime()
 {
   configTime(GMT_OFFSET_SECONDS, DAYLIGHT_OFFSET_SECONDS, NTP_SERVER_NAME);
   isTimeConfigured = true;
 }
 
-String getLocalTimeString()
+void updateLocalTimeString()
 {
   if (not isTimeConfigured)
   {
-    return "TmErrCfg";
+    timeString = "TmErrCfg";
   }
 
   tm timeInfo;
 
   if (not getLocalTime(&timeInfo))
   {
-    return "TmErrGet";
+    timeString = "TmErrGet";
   }
 
-  String timeString;
+  timeString = "";
 
   if (timeInfo.tm_hour < 10) timeString.concat('0');
   timeString.concat(timeInfo.tm_hour);
@@ -43,8 +45,6 @@ String getLocalTimeString()
 
   if (timeInfo.tm_sec < 10) timeString.concat('0');
   timeString.concat(timeInfo.tm_sec);
-
-  return timeString;
 }
 
 bool isCompleteHour()
