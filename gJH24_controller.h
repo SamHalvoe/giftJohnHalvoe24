@@ -98,6 +98,12 @@ void handleLoadWiFiCredentials()
       connectionAttemptCount = 0;
       currentAppMode = AppMode::connectToWiFi;
     }
+    else if (buttonA.wasPressedFor(2500))
+    {
+      buttonA.disableNext();
+      
+      currentAppMode = AppMode::config;
+    }
   }
   else if (buttonA.wasReleased())
   {
