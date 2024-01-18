@@ -43,28 +43,17 @@ class SimpleButton
                 INPUT :
                 INPUT_PULLUP);
     }
-
-    bool handleDisabledNext()
-    {
-      if (hasStateChanged() && m_enableState == EnableState::disabledNext)
-      {
-        enable();
-
-        return false;
-      }
-
-      return isEnabled();
-    }
   
   public:
-    SimpleButton(uint8_t in_pin, uint8_t in_debounceTime = 40, PinState in_pinStatePressed = PinState::low) :
+    SimpleButton(uint8_t in_pin, EnableState in_enableState = EnableState::enabled,
+                 uint8_t in_debounceTime = 40, PinState in_pinStatePressed = PinState::low) :
       m_pin(in_pin),
       m_pinStatePressed(in_pinStatePressed),
       m_currentPinState(invertPinState(in_pinStatePressed)),
       m_lastPinState(invertPinState(in_pinStatePressed)),
       m_wasPressed(false),
       m_wasReleased(false),
-      m_enableState(EnableState::enabled),
+      m_enableState(in_enableState),
       m_debounceTime(in_debounceTime),
       m_timeSinceStateChange(in_debounceTime)
     {}
@@ -78,19 +67,22 @@ class SimpleButton
     {
       m_lastPinState = m_currentPinState;
       m_currentPinState = static_cast<PinState>(digitalRead(m_pin));
+      m_wasPressed = false;
+      m_wasReleased = false;
 
-      if (isEnabled() &&
-          hasStateChanged() &&
-          m_timeSinceStateChange >= m_debounceTime)
+      if (hasStateChanged())
       {
-        m_wasPressed = (m_currentPinState == m_pinStatePressed);
-        m_wasReleased = not m_wasPressed;
-        m_timeSinceStateChange = 0;
-      }
-      else
-      {
-        m_wasPressed = false;
-        m_wasReleased = false;
+        if (isEnabled() && m_timeSinceStateChange >= m_debounceTime)
+        {
+          m_wasPressed = (m_currentPinState == m_pinStatePressed);
+          m_wasReleased = not m_wasPressed;
+          m_timeSinceStateChange = 0;
+        }
+
+        if (m_enableState == EnableState::disabledNext)
+        {
+          enable();
+        }
       }
     }
 
@@ -129,32 +121,32 @@ class SimpleButton
       return m_timeSinceStateChange;
     }
 
-    bool isPressed()
+    bool isPressed() const
     {
-      return handleDisabledNext() && m_currentPinState == m_pinStatePressed;
+      return isEnabled() && m_currentPinState == m_pinStatePressed;
     }
 
-    bool isReleased()
+    bool isReleased() const
     {
-      return handleDisabledNext() && m_currentPinState != m_pinStatePressed;
+      return isEnabled() && m_currentPinState != m_pinStatePressed;
     }
 
-    bool wasPressed()
+    bool wasPressed() const
     {
-      return handleDisabledNext() && m_wasPressed;
+      return m_wasPressed;
     }
 
-    bool wasReleased()
+    bool wasReleased() const
     {
-      return handleDisabledNext() && m_wasReleased;
+      return m_wasReleased;
     }
 
-    bool wasPressedFor(uint32_t in_milliseconds)
+    bool wasPressedFor(uint32_t in_milliseconds) const
     {
       return isPressed() && m_timeSinceStateChange >= in_milliseconds;
     }
 
-    bool wasReleasedFor(uint32_t in_milliseconds)
+    bool wasReleasedFor(uint32_t in_milliseconds) const
     {
       return isReleased() && m_timeSinceStateChange >= in_milliseconds;
     }
