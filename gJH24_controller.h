@@ -48,8 +48,7 @@ void handleConfig()
   }
   else if (buttonB.wasReleased())
   {
-    currentCredentialsListPtr = mockCredentialsListPtr();
-    //currentCredentialsListPtr = readCredentialsList();
+    currentCredentialsListPtr = readCredentialsList(); //mockCredentialsListPtr();
 
     currentAppMode = AppMode::loadWiFiCredentials;
   }

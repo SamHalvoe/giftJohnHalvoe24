@@ -37,7 +37,7 @@ constexpr const uint16_t yOffsetIcon = 32;
 
 size_t credentialsSelectionIndex = 0;
 size_t credentialsPageIndex = 0;
-const size_t credentialsPageSize = 4;
+const size_t credentialsPageSize = 3;
 
 void incrementCredentialsSelectionIndex(size_t in_credentialListSize)
 {
@@ -121,11 +121,11 @@ void drawStringSSID(size_t in_index, const String& in_ssid, bool in_isSSIDSelect
 
   if (in_isSSIDSelected)
   {
-    oled.drawBox(3, 6 + stringPositionY, oled.getStrWidth(in_ssid.c_str()) + 2, 11);
+    oled.drawBox(3, 3 + stringPositionY, oled.getStrWidth(in_ssid.c_str()) + 2, 11);
     oled.setDrawColor(0);
   }
 
-  oled.drawStr(4, 16 + stringPositionY, in_ssid.c_str());
+  oled.drawStr(4, 13 + stringPositionY, in_ssid.c_str());
   
   if (in_isSSIDSelected)
   {
@@ -144,6 +144,9 @@ void drawScreenLoadWiFiCredentials(const CredentialsList& in_credentialList)
     drawStringSSID(index, in_credentialList[offset + index].m_ssid,
                    offset + index == credentialsSelectionIndex);
   }
+
+  drawStringXCenter(48, "Press both to select;");
+  drawStringXCenter(60, "Hold left to return;");
 }
 
 void drawScreenLoadWiFiCredentialsEmpty()
