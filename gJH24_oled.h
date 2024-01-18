@@ -212,7 +212,37 @@ void updateScreenBitcoin(const String& in_string)
   oled.drawStr(xOffset + spaceWidth + (3 * characterWidth), yOffsetA, "1");
   drawBitcoinCharacter(xOffset + (2 * spaceWidth) + (4 * characterWidth), yOffsetA);
 
-  auto numberStringList = splitString(in_string, { ',' });
+  if (in_string.startsWith("BTC"))
+  {
+    drawStringXCenter(yOffsetB, in_string.c_str());
+
+    return;
+  }
+
+  String numberString = splitString(in_string, { '.' })[0]; // get pre-decimal place
+  const size_t numberSegmentSize = 3;
+  const size_t removeCount = numberString.length() % numberSegmentSize;
+  std::vector<String> numberStringList;
+  String tempString;
+
+  if (removeCount > 0)
+  {
+    numberStringList.emplace_back(numberString.substring(0, removeCount));
+    numberString.remove(0, removeCount);
+  }
+
+  while (numberString.length() > 0)
+  {
+    tempString.concat(numberString[0]);
+    numberString.remove(0, 1);
+
+    if (tempString.length() == 3)
+    {
+      numberStringList.emplace_back(tempString);
+      tempString.remove(0, tempString.length());
+    }
+  }
+
   size_t index = 0;
 
   if (numberStringList.size() >= 3)

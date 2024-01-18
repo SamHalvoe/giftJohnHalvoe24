@@ -8,29 +8,32 @@ constexpr const long GMT_OFFSET_SECONDS = 3600;
 constexpr const int DAYLIGHT_OFFSET_SECONDS = 3600;
 
 bool isTimeConfigured = false;
-bool gotIsCompleteHour = false;
 int lastCompleteHour = -1;
+tm timeInfo;
 
 String timeString = "TmUnset";
+
+bool updateTime()
+{
+  return isTimeConfigured && getLocalTime(&timeInfo);
+}
 
 void configurateTime()
 {
   configTime(GMT_OFFSET_SECONDS, DAYLIGHT_OFFSET_SECONDS, NTP_SERVER_NAME);
   isTimeConfigured = true;
+
+  updateTime();
+  lastCompleteHour = timeInfo.tm_hour;
 }
 
-void updateLocalTimeString()
+void getLocalTimeString()
 {
   if (not isTimeConfigured)
   {
     timeString = "TmErrCfg";
-  }
 
-  tm timeInfo;
-
-  if (not getLocalTime(&timeInfo))
-  {
-    timeString = "TmErrGet";
+    return;
   }
 
   timeString = "";
@@ -54,26 +57,12 @@ bool isCompleteHour()
     return false;
   }
 
-  tm timeInfo;
-
-  if (getLocalTime(&timeInfo))
-  {
-    if (timeInfo.tm_min == 0 && not gotIsCompleteHour)
-    {
-      gotIsCompleteHour = true;
-
-      return true;
-    }
-  }
-
-  if (lastCompleteHour == -1)
+  if (timeInfo.tm_hour != lastCompleteHour &&
+      timeInfo.tm_min == 0)
   {
     lastCompleteHour = timeInfo.tm_hour;
-  }
 
-  if (lastCompleteHour != timeInfo.tm_hour)
-  {
-    gotIsCompleteHour = false;
+    return true;
   }
 
   return false;

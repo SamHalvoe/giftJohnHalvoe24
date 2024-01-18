@@ -24,8 +24,6 @@ CredentialsListPtr currentCredentialsListPtr;
 const uint16_t TIME_UPDATE_INTERVAL = 300;
 elapsedMillis timeSinceTimeUpdate = TIME_UPDATE_INTERVAL;
 
-String bitcoinString;
-
 CredentialsListPtr mockCredentialsListPtr()
 {
   CredentialsListPtr credentialsListPtr = std::make_shared<CredentialsList>();
@@ -118,6 +116,7 @@ void handleConnectToWiFi()
     {
       saveCredentials(currentCredentials);
       configurateTime();
+      updateBitcoinPrice();
       currentAppMode = AppMode::clock;
     }
     else
@@ -125,8 +124,10 @@ void handleConnectToWiFi()
       ++connectionAttemptCount;
     }
 
-    if (connectionAttemptCount == 16)
+    if (connectionAttemptCount == 24)
     {
+      disconnectFromWifi();
+
       currentAppMode = AppMode::connectToWiFiFailed;
     }
 
@@ -144,11 +145,25 @@ void handleConnectToWiFiFailed()
 
 void handleClock()
 {
-  if (timeSinceTimeUpdate >= TIME_UPDATE_INTERVAL)
+  if (buttonB.wasReleased())
   {
-    updateLocalTimeString();
-    
-    timeSinceTimeUpdate = 0;
+    currentAppMode = AppMode::bitcoin;
+  }
+
+  getLocalTimeString();
+}
+
+void handleBitcoin()
+{
+  if (buttonA.wasReleased())
+  {
+    currentAppMode = AppMode::clock;
+  }
+
+  if (buttonA.wasPressedFor(2000) && buttonB.wasReleased())
+  {
+    buttonA.disableNext();
+    updateBitcoinPrice();
   }
 }
 
@@ -161,7 +176,7 @@ const String& getCurrentModeString(AppMode in_appMode)
     break;
 
     case AppMode::bitcoin:
-      return bitcoinString;
+      return bitcoinPrice;
     break;
   }
 
@@ -200,7 +215,19 @@ void handleApp(AppMode in_appMode)
     break;
 
     case AppMode::bitcoin:
-      
+      handleBitcoin();
     break;
+  }
+
+  if (timeSinceTimeUpdate >= TIME_UPDATE_INTERVAL)
+  {
+    updateTime();
+    
+    timeSinceTimeUpdate = 0;
+  }
+
+  if (isCompleteHour())
+  {
+    updateBitcoinPrice();
   }
 }

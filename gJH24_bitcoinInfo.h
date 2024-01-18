@@ -7,13 +7,13 @@
 #include "gJH24_WiFi.h"
 
 constexpr const char* infoDomain = "http://api.coinlayer.com/live";
-String bitcoinPrice;
+String bitcoinPrice = "BTCUnset";
 
-String getBitcoinPrice()
+void updateBitcoinPrice()
 {
   if (not isConnectedToWifi())
   {
-    return "BTCErrNoWiFi";
+    bitcoinPrice = "BTCNoWiFi";
   }
 
   String serverPath;
@@ -28,10 +28,10 @@ String getBitcoinPrice()
       
   if (httpResponseCode > 0)
   {
-    Serial.print("HTTP Response code: ");
-    Serial.println(httpResponseCode);
     String payload = httpClient.getString();
+    Serial.println();
     Serial.println(payload);
+    Serial.println();
 
     JsonDocument jsonDocument;
     deserializeJson(jsonDocument, payload);
@@ -40,11 +40,8 @@ String getBitcoinPrice()
   }
   else
   {
-    Serial.print("Error code: ");
-    Serial.println(httpResponseCode);
+    bitcoinPrice = "BTCErrHttp";
   }
   
   httpClient.end();
-
-  return bitcoinPrice;
 }

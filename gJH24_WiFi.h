@@ -42,6 +42,11 @@ bool connectToWifi(const WiFiCredentials& in_credentials)
   return WiFi.begin(in_credentials.m_ssid, in_credentials.m_password) == WL_CONNECTED;
 }
 
+bool disconnectFromWifi()
+{
+  return WiFi.disconnect();
+}
+
 bool isConnectedToWifi()
 {
   return WiFi.status() == WL_CONNECTED;

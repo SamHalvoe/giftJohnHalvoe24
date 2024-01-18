@@ -3,8 +3,8 @@
 void setup()
 {
   Serial.begin(9600);
-
-  while (not Serial) {}
+  elapsedMillis timeSinceSerialbegin;
+  while (not Serial && timeSinceSerialbegin < 5000) {}
 
   Serial.println("setup started");
   
@@ -25,7 +25,4 @@ void loop()
 {
   handleApp(currentAppMode);
   updateOled(currentAppMode, getCurrentModeString(currentAppMode), connectionAttemptCount, currentCredentialsListPtr);
-
-  //Serial.print("currentAppMode: ");
-  //Serial.println(static_cast<int16_t>(currentAppMode));
 }

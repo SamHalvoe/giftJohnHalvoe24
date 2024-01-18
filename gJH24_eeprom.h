@@ -50,14 +50,6 @@ bool beginEeprom()
   EEPROM_FIRST_CREDENTIAL_ADDRESS = EEPROM_CREDENTIAL_COUNT_ADDRESS + sizeof(credentialCount);
   isEepromInitialised = true;
 
-  Serial.println();
-  Serial.print("isEepromInitialised: ");
-  Serial.println(isEepromInitialised);
-  Serial.println();
-  Serial.print("credentialCount: ");
-  Serial.println(credentialCount);
-  Serial.println();
-
   return true;
 }
 
@@ -91,10 +83,6 @@ bool appendCredentials(const WiFiCredentials& in_credentials)
 
 WiFiCredentials readCredentials(uint32_t in_credentialIndex)
 {
-  Serial.println();
-  Serial.println("readCredentials()");
-  Serial.println();
-
   if (not isEepromInitialised ||
       in_credentialIndex >= credentialCount)
   {
@@ -108,14 +96,6 @@ WiFiCredentials readCredentials(uint32_t in_credentialIndex)
   address = address + EEPROM_FIELD_WIDTH;
   eeprom.getString(address, credentials.m_password);
   credentials.m_isComplete = true;
-
-  Serial.println();
-  Serial.print("credentials.m_ssid: ");
-  Serial.println(credentials.m_ssid);
-  Serial.println();
-  Serial.print("credentials.m_password: ");
-  Serial.println(credentials.m_password);
-  Serial.println();
 
   return credentials;
 }
