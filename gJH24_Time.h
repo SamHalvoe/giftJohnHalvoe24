@@ -49,21 +49,3 @@ void getLocalTimeString()
   if (timeInfo.tm_sec < 10) timeString.concat('0');
   timeString.concat(timeInfo.tm_sec);
 }
-
-bool isCompleteHour()
-{
-  if (not isTimeConfigured)
-  {
-    return false;
-  }
-
-  if (timeInfo.tm_hour != lastCompleteHour &&
-      timeInfo.tm_min == 0)
-  {
-    lastCompleteHour = timeInfo.tm_hour;
-
-    return true;
-  }
-
-  return false;
-}

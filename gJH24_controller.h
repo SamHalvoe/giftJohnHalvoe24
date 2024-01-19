@@ -21,8 +21,14 @@ uint8_t connectionAttemptCount = 0;
 elapsedMillis timeSinceWiFiConnectionCheck;
 CredentialsListPtr currentCredentialsListPtr;
 
-const uint16_t TIME_UPDATE_INTERVAL = 300;
+const uint16_t TIME_UPDATE_INTERVAL = 300; // ms
 elapsedMillis timeSinceTimeUpdate = TIME_UPDATE_INTERVAL;
+
+const uint16_t BITCOIN_UPDATE_INTERVAL = 600; // s
+elapsedSeconds timeSinceBitcoinUpdate;
+
+const uint16_t MIN_BRIGHTNESS_ADJUSTMENT_INTERVAL = 200; // ms
+elapsedMillis timeSinceBrightnessAdjustment;
 
 CredentialsListPtr mockCredentialsListPtr()
 {
@@ -149,8 +155,6 @@ void handleClock()
   {
     currentAppMode = AppMode::bitcoin;
   }
-
-  getLocalTimeString();
 }
 
 void handleBitcoin()
@@ -183,6 +187,66 @@ const String& getCurrentModeString(AppMode in_appMode)
   return String();
 }
 
+int32_t getCurrentModeInteger(AppMode in_appMode)
+{
+  switch (in_appMode)
+  {
+    case AppMode::connectToWiFi:
+      return connectionAttemptCount;
+    break;
+
+    case AppMode::bitcoin:
+      return displayBitcoinUpdateIndicator;
+    break;
+  }
+
+  return -1;
+}
+
+void handleBrightnessAdjustment()
+{
+  if (isBrightnessAdjustmentActive)
+  {
+    if (buttonA.wasPressedFor(2000) && buttonB.wasPressedFor(2000))
+    {
+      buttonA.disableNext();
+      buttonB.disableNext();
+      isBrightnessAdjustmentActive = false;
+    }
+    else if (buttonA.wasReleased())
+    {
+      decrementBrightness();
+    }
+    else if (buttonB.wasReleased())
+    {
+      incrementBrightness();
+    }
+    else if (timeSinceBrightnessAdjustment >= MIN_BRIGHTNESS_ADJUSTMENT_INTERVAL)
+    {
+      if (buttonA.wasPressedFor(800))
+      {
+        decrementBrightness();
+        timeSinceBrightnessAdjustment = 0;
+      }
+      else if (buttonB.wasPressedFor(800))
+      {
+        incrementBrightness();
+        timeSinceBrightnessAdjustment = 0;
+      }
+    }
+  }
+  else
+  {
+    if (buttonA.wasPressedFor(2000) && buttonB.wasPressedFor(2000))
+    {
+      buttonA.disableNext();
+      buttonB.disableNext();
+
+      isBrightnessAdjustmentActive = true;
+    }
+  }
+}
+
 void handleApp(AppMode in_appMode)
 {
   buttonA.update();
@@ -211,23 +275,54 @@ void handleApp(AppMode in_appMode)
     break;
     
     case AppMode::clock:
-      handleClock();
+      handleBrightnessAdjustment();
+
+      if (not isBrightnessAdjustmentActive)
+      {
+        handleClock();
+      }
     break;
 
     case AppMode::bitcoin:
-      handleBitcoin();
+      handleBrightnessAdjustment();
+
+      if (not isBrightnessAdjustmentActive)
+      {
+        handleBitcoin();
+      }
     break;
   }
 
   if (timeSinceTimeUpdate >= TIME_UPDATE_INTERVAL)
   {
     updateTime();
+    getLocalTimeString();
     
     timeSinceTimeUpdate = 0;
   }
 
-  if (isCompleteHour())
+  if (timeSinceBitcoinUpdate >= BITCOIN_UPDATE_INTERVAL)
   {
     updateBitcoinPrice();
+
+    if (isOledAutoOnOff)
+    {
+      turnOledOn();
+    }
+    else
+    {
+      displayBitcoinUpdateIndicator = displayBitcoinUpdateIndicator_true;
+    }
+
+    timeSinceBitcoinUpdate = 0;
+  }
+  else if (timeSinceBitcoinUpdate > 10)
+  {
+    if (isOledAutoOnOff)
+    {
+      turnOledOff();
+    }
+
+    displayBitcoinUpdateIndicator = displayBitcoinUpdateIndicator_false;
   }
 }

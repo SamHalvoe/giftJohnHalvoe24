@@ -9,6 +9,7 @@ void setup()
   Serial.println("setup started");
   
   oled.begin();
+  oled.setContrast(oledBrightness);
   Wire.begin();
 
   buttonA.begin();
@@ -24,5 +25,5 @@ void setup()
 void loop()
 {
   handleApp(currentAppMode);
-  updateOled(currentAppMode, getCurrentModeString(currentAppMode), connectionAttemptCount, currentCredentialsListPtr);
+  updateOled(currentAppMode, getCurrentModeString(currentAppMode), getCurrentModeInteger(currentAppMode), currentCredentialsListPtr);
 }

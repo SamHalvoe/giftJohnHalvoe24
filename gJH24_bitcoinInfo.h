@@ -1,12 +1,13 @@
 #pragma once
 
-#include <HTTPClient.h>
+#include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
 
 #include "arduino_secrets.h"
 #include "gJH24_WiFi.h"
 
-constexpr const char* infoDomain = "http://api.coinlayer.com/live";
+constexpr const char* infoDomain = "pro-api.coinmarketcap.com";
+constexpr const char* infoPath = "/v2/cryptocurrency/quotes/latest";
 String bitcoinPrice = "BTCUnset";
 
 void updateBitcoinPrice()
@@ -14,34 +15,62 @@ void updateBitcoinPrice()
   if (not isConnectedToWifi())
   {
     bitcoinPrice = "BTCNoWiFi";
+
+    return;
   }
 
-  String serverPath;
-  serverPath.concat(infoDomain);
-  serverPath.concat("?access_key=");
-  serverPath.concat(CRYPTO_API_KEY);
-  serverPath.concat("&symbols=BTC");
+  WiFiClientSecure client;
+  client.setCACert(CERTIFICATE);
 
-  HTTPClient httpClient;
-  httpClient.begin(serverPath.c_str());
-  int httpResponseCode = httpClient.GET();
-      
-  if (httpResponseCode > 0)
+  if (not client.connect(infoDomain, 443))
   {
-    String payload = httpClient.getString();
-    Serial.println();
-    Serial.println(payload);
-    Serial.println();
+    bitcoinPrice = "BTCErrCon";
 
-    JsonDocument jsonDocument;
-    deserializeJson(jsonDocument, payload);
+    return;
+  }
 
-    bitcoinPrice = jsonDocument["rates"]["BTC"].as<String>();
-  }
-  else
-  {
-    bitcoinPrice = "BTCErrHttp";
-  }
+  String getRequest = "GET ";
+  getRequest.concat("https://");
+  getRequest.concat(infoDomain);
+  getRequest.concat(infoPath);
+  getRequest.concat("?CMC_PRO_API_KEY=");
+  getRequest.concat(CRYPTO_API_KEY);
+  getRequest.concat("&symbol=BTC");
+  getRequest.concat("&convert=EUR");
+  getRequest.concat(" HTTP/1.0");
+
+  client.println(getRequest);
+  client.print("Host: ");
+  client.println(infoDomain);
+  client.println("Connection: close");
+  client.println();
+
+  String response;
   
-  httpClient.end();
+  while (client.connected())
+  {
+    String line = client.readStringUntil('\n');
+
+    if (line == "\r") // end of response
+    {
+      break;
+    }
+
+    response.concat(line);
+    response.concat('\n');
+  }
+
+  String payload;
+
+  while (client.available())
+  {
+    payload.concat(static_cast<char>(client.read()));
+  }
+
+  client.stop();
+
+  JsonDocument jsonDocument;
+  deserializeJson(jsonDocument, payload);
+
+  bitcoinPrice = jsonDocument["data"]["BTC"][0]["quote"]["EUR"]["price"].as<String>();
 }
