@@ -1,6 +1,7 @@
 #pragma once
 
 #include "gJH24_def.h"
+#include "gJH24_power.h"
 #include "gJH24_qrCode.h"
 #include "gJH24_eeprom.h"
 #include "gJH24_WiFi.h"
@@ -171,10 +172,14 @@ void handleBitcoin()
   }
 }
 
-const String& getCurrentModeString(AppMode in_appMode)
+String getCurrentModeString(AppMode in_appMode)
 {
   switch (in_appMode)
   {
+    case AppMode::config:
+      return String(getBatteryVoltage()) + " V";
+    break;
+
     case AppMode::clock:
       return timeString;
     break;
@@ -195,8 +200,12 @@ int32_t getCurrentModeInteger(AppMode in_appMode)
       return connectionAttemptCount;
     break;
 
+    case AppMode::clock:
+      return displayIndicator;
+    break;
+
     case AppMode::bitcoin:
-      return displayBitcoinUpdateIndicator;
+      return displayIndicator;
     break;
   }
 
@@ -311,7 +320,7 @@ void handleApp(AppMode in_appMode)
     }
     else
     {
-      displayBitcoinUpdateIndicator = displayBitcoinUpdateIndicator_true;
+      displayIndicator = displayIndicatorBitcoinUpdate_true;
     }
 
     timeSinceBitcoinUpdate = 0;
@@ -323,6 +332,15 @@ void handleApp(AppMode in_appMode)
       turnOledOff();
     }
 
-    displayBitcoinUpdateIndicator = displayBitcoinUpdateIndicator_false;
+    displayIndicator = displayIndicator_false;
+  }
+
+  if (getBatteryVoltage() < 3.70F)
+  {
+    displayIndicator = displayIndicatorBatteryLow_true;
+  }
+  else
+  {
+    displayIndicator = displayIndicator_false;
   }
 }

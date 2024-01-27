@@ -34,15 +34,17 @@ elapsedMillis timeSinceOledUpdate = OLED_UPDATE_INTERVAL;
 
 constexpr const uint16_t iconQRCode = 48 + 6;
 constexpr const uint16_t iconFloppy = 48 + 3;
+constexpr const uint16_t iconBatteryLow = 48 + 1;
 constexpr const uint16_t yOffsetIcon = 32;
 
 size_t credentialsSelectionIndex = 0;
 size_t credentialsPageIndex = 0;
 const size_t credentialsPageSize = 3;
 
-const int32_t displayBitcoinUpdateIndicator_true = 1;
-const int32_t displayBitcoinUpdateIndicator_false = 0;
-int32_t displayBitcoinUpdateIndicator = displayBitcoinUpdateIndicator_false;
+const int32_t displayIndicator_false = 0;
+const int32_t displayIndicatorBitcoinUpdate_true = 1;
+const int32_t displayIndicatorBatteryLow_true = 2;
+int32_t displayIndicator = displayIndicator_false;
 
 const uint8_t minBrightness = 0;
 const uint8_t maxBrightness = 255;
@@ -145,7 +147,6 @@ void decrementCredentialsSelectionIndex()
   }
 }
 
-
 void updateBrightnessAdjustmentIndicator()
 {
   if (isBrightnessAdjustmentActive)
@@ -167,7 +168,7 @@ void drawStringXCenter(uint16_t in_y, const char* in_string)
   oled.drawStr((128 - stringWidth) / 2, in_y, in_string);
 }
 
-void updateScreenConfig()
+void updateScreenConfig(const String& in_batteryVoltage)
 {
   constexpr const uint16_t xLeftCenter = (64 - 21) / 2;
   constexpr const uint16_t xRightCenter = (196 - 21) / 2;
@@ -178,6 +179,7 @@ void updateScreenConfig()
   oled.drawGlyph(xRightCenter, yOffsetIcon, iconFloppy);
 
   oled.setFont(u8g2_font_glasstown_nbp_tr);
+  drawStringXCenter(32, in_batteryVoltage.c_str());
   drawStringXCenter(48, "Select credentials source;");
   drawStringXCenter(60, "Press left or right;");
 }
@@ -273,8 +275,18 @@ void updateScreenConnectToWiFiFailed()
   drawStringXCenter(48, "Press any button to continue;");
 }
 
-void updateScreenClock(const String& in_string)
+void updateIndicatorBatteryLow(int32_t in_integer)
 {
+  if (in_integer == displayIndicatorBatteryLow_true)
+  {
+    oled.setFont(u8g2_font_battery19_tn);
+    oled.drawGlyph(120, 64, iconBatteryLow);
+  }
+}
+
+void updateScreenClock(const String& in_string, int32_t in_integer)
+{
+  updateIndicatorBatteryLow(in_integer);
   oled.setFont(u8g2_font_mystery_quest_32_tn);
   drawStringXCenter(40, in_string.c_str());
 }
@@ -355,12 +367,18 @@ void drawBitcoinPrice(uint8_t in_xOffset, uint8_t in_yOffset,
   drawEuroCharacter(in_xOffset + (3 * in_spaceWidth) + (7 * in_characterWidth), in_yOffset);
 }
 
-void updateScreenBitcoin(int32_t in_integer, const String& in_string)
+void updateIndicatorBitcoinUpdate(int32_t in_integer)
 {
-  if (in_integer == displayBitcoinUpdateIndicator_true)
+  if (in_integer == displayIndicatorBitcoinUpdate_true)
   {
     oled.drawFrame(0, 0, 128, 64);
   }
+}
+
+void updateScreenBitcoin(const String& in_string, int32_t in_integer)
+{
+  updateIndicatorBatteryLow(in_integer);
+  updateIndicatorBitcoinUpdate(in_integer);
 
   oled.setFont(u8g2_font_chargen_92_me);
 
@@ -392,7 +410,7 @@ void updateOled(AppMode in_appMode, const String& in_string, int32_t in_integer,
     switch (in_appMode)
     {
       case AppMode::config:
-        updateScreenConfig();
+        updateScreenConfig(in_string);
       break;
 
       case AppMode::readWiFiQRCode:
@@ -412,12 +430,12 @@ void updateOled(AppMode in_appMode, const String& in_string, int32_t in_integer,
       break;
 
       case AppMode::clock:
-        updateScreenClock(in_string);
+        updateScreenClock(in_string, in_integer);
         updateBrightnessAdjustmentIndicator();
       break;
 
       case AppMode::bitcoin:
-        updateScreenBitcoin(in_integer, in_string);
+        updateScreenBitcoin(in_string, in_integer);
         updateBrightnessAdjustmentIndicator();
       break;
     }
