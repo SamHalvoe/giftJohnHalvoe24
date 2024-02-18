@@ -48,7 +48,7 @@ int32_t displayIndicator = displayIndicator_false;
 
 const uint8_t minBrightness = 0;
 const uint8_t maxBrightness = 255;
-const uint8_t brightnessStep = 25;
+const uint8_t brightnessStep = 64;
 
 bool isBrightnessAdjustmentActive = false;
 bool isOledOn = true;
@@ -151,7 +151,18 @@ void updateBrightnessAdjustmentIndicator()
 {
   if (isBrightnessAdjustmentActive)
   {
-    oled.drawTriangle(0, 0, 5, 0, 0, 5);
+    if (oledBrightness == maxBrightness)
+    {
+      oled.drawBox(0, 0, 5, 5);
+    }
+    else if (oledBrightness == minBrightness)
+    {
+      oled.drawFrame(0, 0, 5, 5);
+    }
+    else
+    {
+      oled.drawTriangle(0, 0, 5, 0, 0, 5);
+    }
   }
 }
 

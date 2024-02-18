@@ -15,7 +15,8 @@ class SimpleButton
     {
       enabled = 0,
       disabled,
-      disabledNext
+      disabledNext,
+      disabledFor
     };
 
   private:
@@ -28,6 +29,7 @@ class SimpleButton
     EnableState m_enableState;
     uint8_t m_debounceTime;
     elapsedMillis m_timeSinceStateChange;
+    uint32_t m_timeDisabledFor = 0; // ms
 
   private:
     PinState invertPinState(PinState in_pinState) const
@@ -83,6 +85,11 @@ class SimpleButton
         {
           enable();
         }
+        else if (m_enableState == EnableState::disabledFor && m_timeSinceStateChange >= m_timeDisabledFor)
+        {
+          enable();
+          m_timeDisabledFor = 0;
+        }
       }
     }
 
@@ -93,12 +100,18 @@ class SimpleButton
 
     void disable()
     {
-      m_enableState = EnableState::disabled;;
+      m_enableState = EnableState::disabled;
     }
 
     void disableNext()
     {
       m_enableState = EnableState::disabledNext;
+    }
+
+    void disableFor(uint32_t in_millis)
+    {
+      m_enableState = EnableState::disabledFor;
+      m_timeDisabledFor = m_timeSinceStateChange + in_millis;
     }
 
     EnableState getEnableState() const

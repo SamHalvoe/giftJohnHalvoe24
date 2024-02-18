@@ -214,44 +214,22 @@ int32_t getCurrentModeInteger(AppMode in_appMode)
 
 void handleBrightnessAdjustment()
 {
+  if (isOledOn && not isOledAutoOnOff && buttonA.wasPressedFor(2000) && buttonB.wasPressedFor(2000))
+  {
+    buttonA.disableNext();
+    buttonB.disableNext();
+    isBrightnessAdjustmentActive = not isBrightnessAdjustmentActive;
+  }
+
   if (isBrightnessAdjustmentActive)
   {
-    if (buttonA.wasPressedFor(2000) && buttonB.wasPressedFor(2000))
-    {
-      buttonA.disableNext();
-      buttonB.disableNext();
-      isBrightnessAdjustmentActive = false;
-    }
-    else if (buttonA.wasReleased())
+    if (buttonA.wasReleased())
     {
       decrementBrightness();
     }
     else if (buttonB.wasReleased())
     {
       incrementBrightness();
-    }
-    else if (timeSinceBrightnessAdjustment >= MIN_BRIGHTNESS_ADJUSTMENT_INTERVAL)
-    {
-      if (buttonA.wasPressedFor(800))
-      {
-        decrementBrightness();
-        timeSinceBrightnessAdjustment = 0;
-      }
-      else if (buttonB.wasPressedFor(800))
-      {
-        incrementBrightness();
-        timeSinceBrightnessAdjustment = 0;
-      }
-    }
-  }
-  else
-  {
-    if (buttonA.wasPressedFor(2000) && buttonB.wasPressedFor(2000))
-    {
-      buttonA.disableNext();
-      buttonB.disableNext();
-
-      isBrightnessAdjustmentActive = true;
     }
   }
 }
