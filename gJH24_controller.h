@@ -9,14 +9,6 @@
 #include "gJH24_bitcoinInfo.h"
 #include "gJH24_oled.h"
 
-#include "SimpleButton.h"
-
-const uint8_t PIN_BUTTON_A = 12;
-const uint8_t PIN_BUTTON_B = 27;
-
-SimpleButton buttonA(PIN_BUTTON_A);
-SimpleButton buttonB(PIN_BUTTON_B);
-
 WiFiCredentials currentCredentials;
 uint8_t connectionAttemptCount = 0;
 elapsedMillis timeSinceWiFiConnectionCheck;
@@ -45,13 +37,13 @@ CredentialsListPtr mockCredentialsListPtr()
 
 void handleConfig()
 {
-  if (buttonA.wasReleased())
+  if (true) //buttonA.wasReleased()
   {
     turnCodeReaderLedOn();
 
     currentAppMode = AppMode::readWiFiQRCode;
   }
-  else if (buttonB.wasReleased())
+  else if (false) //buttonB.wasReleased()
   {
     currentCredentialsListPtr = readCredentialsList(); //mockCredentialsListPtr();
 
@@ -61,7 +53,7 @@ void handleConfig()
 
 void handleReadWiFiQRCode()
 {
-  if (buttonB.wasReleased())
+  if (false) //buttonB.wasReleased()
   {
     currentAppMode = AppMode::config;
   }
@@ -88,28 +80,28 @@ void handleLoadWiFiCredentials()
 {
   if (currentCredentialsListPtr && currentCredentialsListPtr->size() > 0)
   {
-    if (buttonA.wasReleased())
+    if (false) //buttonA.wasReleased()
     {
       decrementCredentialsSelectionIndex();
     }
-    else if (buttonB.wasReleased())
+    else if (false) //buttonB.wasReleased()
     {
       incrementCredentialsSelectionIndex(currentCredentialsListPtr->size());
     }
-    else if (buttonA.isPressed() && buttonB.isPressed())
+    else if (false) //buttonA.isPressed() && buttonB.isPressed()
     {
       connectToWifi(currentCredentialsListPtr->at(credentialsSelectionIndex));
       connectionAttemptCount = 0;
       currentAppMode = AppMode::connectToWiFi;
     }
-    else if (buttonA.wasPressedFor(2000))
+    else if (false) //buttonA.wasPressedFor(2000)
     {
-      buttonA.disableNext();
+      //buttonA.disableNext();
       
       currentAppMode = AppMode::config;
     }
   }
-  else if (buttonA.wasReleased())
+  else if (false) //buttonA.wasReleased()
   {
     currentAppMode = AppMode::config;
   }
@@ -144,7 +136,7 @@ void handleConnectToWiFi()
 
 void handleConnectToWiFiFailed()
 {
-  if (buttonA.wasReleased() || buttonB.wasReleased())
+  if (false) //buttonA.wasReleased() || buttonB.wasReleased()
   {
     currentAppMode = AppMode::config;
   }
@@ -152,7 +144,7 @@ void handleConnectToWiFiFailed()
 
 void handleClock()
 {
-  if (buttonB.wasReleased())
+  if (false) //buttonB.wasReleased()
   {
     currentAppMode = AppMode::bitcoin;
   }
@@ -160,14 +152,14 @@ void handleClock()
 
 void handleBitcoin()
 {
-  if (buttonA.wasReleased())
+  if (false) //buttonA.wasReleased()
   {
     currentAppMode = AppMode::clock;
   }
 
-  if (buttonA.wasPressedFor(2000) && buttonB.wasReleased())
+  if (false) //buttonA.wasPressedFor(2000) && buttonB.wasReleased()
   {
-    buttonA.disableNext();
+    //buttonA.disableNext();
     updateBitcoinPrice();
   }
 }
@@ -214,20 +206,20 @@ int32_t getCurrentModeInteger(AppMode in_appMode)
 
 void handleBrightnessAdjustment()
 {
-  if (isOledOn && not isOledAutoOnOff && buttonA.wasPressedFor(2000) && buttonB.wasPressedFor(2000))
+  if (isOledOn && not isOledAutoOnOff && false) //buttonA.wasPressedFor(2000) && buttonB.wasPressedFor(2000)
   {
-    buttonA.disableNext();
-    buttonB.disableNext();
+    //buttonA.disableNext();
+    //buttonB.disableNext();
     isBrightnessAdjustmentActive = not isBrightnessAdjustmentActive;
   }
 
   if (isBrightnessAdjustmentActive)
   {
-    if (buttonA.wasReleased())
+    if (true) //buttonA.wasReleased()
     {
       decrementBrightness();
     }
-    else if (buttonB.wasReleased())
+    else if (false) //buttonB.wasReleased()
     {
       incrementBrightness();
     }
@@ -236,8 +228,8 @@ void handleBrightnessAdjustment()
 
 void handleApp(AppMode in_appMode)
 {
-  buttonA.update();
-  buttonB.update();
+  //buttonA.update();
+  //buttonB.update();
 
   switch (in_appMode)
   {

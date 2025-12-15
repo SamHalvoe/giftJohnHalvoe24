@@ -4,16 +4,21 @@ void setup()
 {
   Serial.begin(9600);
   elapsedMillis timeSinceSerialbegin;
-  while (not Serial && timeSinceSerialbegin < 5000) {}
+  while (not Serial && timeSinceSerialbegin < 5000) { delay(10); }
 
   Serial.println("setup started");
   
-  oled.begin();
-  oled.setContrast(oledBrightness);
-  Wire.begin();
+  if (not oled.begin())
+  {
+    Serial.println("oled.begin() failed!");
+  }
 
-  buttonA.begin();
-  buttonB.begin();
+  oled.setContrast(oledBrightness);
+
+  if (not Wire.begin())
+  {
+    Serial.println("Wire.begin() failed!");
+  }
 
   beginEeprom();
 
