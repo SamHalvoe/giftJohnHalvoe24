@@ -26,17 +26,3 @@ String readQRCode()
 
   return String();
 }
-
-// turn on and off causes trouble: I could not read any QR code, see https://github.com/usefulsensors/tiny_code_reader_arduino/issues/1
-void turnCodeReaderLedOn()
-{
-  // naming error, see https://github.com/usefulsensors/tiny_code_reader_arduino/issues/1
-  //person_sensor_write_reg(TINY_CODE_READER_REG_LED_STATE, LED_REG_VALUE_ON);
-}
-
-// turn on and off causes trouble: I could not read any QR code, see https://github.com/usefulsensors/tiny_code_reader_arduino/issues/1
-void turnCodeReaderLedOff()
-{
-  // naming error, see https://github.com/usefulsensors/tiny_code_reader_arduino/issues/1
-  //person_sensor_write_reg(TINY_CODE_READER_REG_LED_STATE, LED_REG_VALUE_OFF);
-}

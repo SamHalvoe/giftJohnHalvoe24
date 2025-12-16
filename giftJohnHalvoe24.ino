@@ -20,9 +20,15 @@ void setup()
     Serial.println("Wire.begin() failed!");
   }
 
-  beginEeprom();
+  if (not beginEeprom())
+  {
+    Serial.println("beginEeprom() failed!");
+  }
 
-  turnCodeReaderLedOff();
+  if (not touchInput.begin())
+  {
+    Serial.println("touchInput.begin() failed!");
+  }
   
   Serial.println("setup finished");
 }

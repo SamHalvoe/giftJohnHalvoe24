@@ -8,6 +8,7 @@
 #include "gJH24_Time.h"
 #include "gJH24_bitcoinInfo.h"
 #include "gJH24_oled.h"
+#include "gJH24_touchInput.h"
 
 WiFiCredentials currentCredentials;
 uint8_t connectionAttemptCount = 0;
@@ -37,13 +38,11 @@ CredentialsListPtr mockCredentialsListPtr()
 
 void handleConfig()
 {
-  if (true) //buttonA.wasReleased()
+  if (touchInput.m_touchSensor.isLeftTouched()) //buttonA.wasReleased()
   {
-    turnCodeReaderLedOn();
-
     currentAppMode = AppMode::readWiFiQRCode;
   }
-  else if (false) //buttonB.wasReleased()
+  else if (touchInput.m_touchSensor.isRightTouched()) //buttonB.wasReleased()
   {
     currentCredentialsListPtr = readCredentialsList(); //mockCredentialsListPtr();
 
@@ -69,7 +68,6 @@ void handleReadWiFiQRCode()
 
   if (currentCredentials.m_isComplete)
   {
-    turnCodeReaderLedOff();
     connectToWifi(currentCredentials);
     connectionAttemptCount = 0;
     currentAppMode = AppMode::connectToWiFi;
