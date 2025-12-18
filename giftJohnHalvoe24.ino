@@ -2,7 +2,7 @@
 
 void setup()
 {
-  Serial.begin(9600);
+  Serial.begin(115200);
   elapsedMillis timeSinceSerialbegin;
   while (not Serial && timeSinceSerialbegin < 5000) { delay(10); }
 

@@ -15,6 +15,9 @@ uint8_t connectionAttemptCount = 0;
 elapsedMillis timeSinceWiFiConnectionCheck;
 CredentialsListPtr currentCredentialsListPtr;
 
+const uint16_t QRCODE_READING_INTERVAL = 500; // ms
+elapsedMillis timeSinceQRCodeReading;
+
 const uint16_t TIME_UPDATE_INTERVAL = 300; // ms
 elapsedMillis timeSinceTimeUpdate = TIME_UPDATE_INTERVAL;
 
@@ -36,41 +39,50 @@ CredentialsListPtr mockCredentialsListPtr()
   return credentialsListPtr;
 }
 
+void switchAppMode(AppMode in_newMode)
+{
+  currentAppMode = in_newMode;
+  touchInput.reset();
+}
+
 void handleConfig()
 {
-  if (touchInput.m_touchSensor.isLeftTouched()) //buttonA.wasReleased()
+  if (touchInput.isRightTapped())
   {
-    currentAppMode = AppMode::readWiFiQRCode;
+    switchAppMode(AppMode::readWiFiQRCode);
   }
-  else if (touchInput.m_touchSensor.isRightTouched()) //buttonB.wasReleased()
+  else if (touchInput.isLeftTapped())
   {
     currentCredentialsListPtr = readCredentialsList(); //mockCredentialsListPtr();
 
-    currentAppMode = AppMode::loadWiFiCredentials;
+    switchAppMode(AppMode::loadWiFiCredentials);
   }
 }
 
 void handleReadWiFiQRCode()
 {
-  if (false) //buttonB.wasReleased()
+  if (touchInput.isLeftTapped())
   {
-    currentAppMode = AppMode::config;
+    switchAppMode(AppMode::config);
   }
 
-  String qrCodeContent = readQRCode();
-
-  if (qrCodeContent.length() == 0)
+  if (timeSinceQRCodeReading >= QRCODE_READING_INTERVAL)
   {
-    return;
-  }
+    String qrCodeContent = readQRCode();
 
-  currentCredentials = extractWiFiCredentials(qrCodeContent);
+    if (qrCodeContent.length() > 0)
+    {
+      currentCredentials = extractWiFiCredentials(qrCodeContent);
 
-  if (currentCredentials.m_isComplete)
-  {
-    connectToWifi(currentCredentials);
-    connectionAttemptCount = 0;
-    currentAppMode = AppMode::connectToWiFi;
+      if (currentCredentials.m_isComplete)
+      {
+        connectToWifi(currentCredentials);
+        connectionAttemptCount = 0;
+        switchAppMode(AppMode::connectToWiFi);
+      }
+    }
+
+    timeSinceQRCodeReading = 0;
   }
 }
 
@@ -78,11 +90,11 @@ void handleLoadWiFiCredentials()
 {
   if (currentCredentialsListPtr && currentCredentialsListPtr->size() > 0)
   {
-    if (false) //buttonA.wasReleased()
+    if (touchInput.isRightTapped())
     {
       decrementCredentialsSelectionIndex();
     }
-    else if (false) //buttonB.wasReleased()
+    else if (touchInput.isLeftTapped())
     {
       incrementCredentialsSelectionIndex(currentCredentialsListPtr->size());
     }
@@ -90,18 +102,16 @@ void handleLoadWiFiCredentials()
     {
       connectToWifi(currentCredentialsListPtr->at(credentialsSelectionIndex));
       connectionAttemptCount = 0;
-      currentAppMode = AppMode::connectToWiFi;
+      switchAppMode(AppMode::connectToWiFi);
     }
     else if (false) //buttonA.wasPressedFor(2000)
     {
-      //buttonA.disableNext();
-      
-      currentAppMode = AppMode::config;
+      switchAppMode(AppMode::config);
     }
   }
-  else if (false) //buttonA.wasReleased()
+  else if (touchInput.isRightTapped())
   {
-    currentAppMode = AppMode::config;
+    switchAppMode(AppMode::config);
   }
 }
 
@@ -114,7 +124,7 @@ void handleConnectToWiFi()
       saveCredentials(currentCredentials);
       configurateTime();
       updateBitcoinPrice();
-      currentAppMode = AppMode::clock;
+      switchAppMode(AppMode::clock);
     }
     else
     {
@@ -125,7 +135,7 @@ void handleConnectToWiFi()
     {
       disconnectFromWifi();
 
-      currentAppMode = AppMode::connectToWiFiFailed;
+      switchAppMode(AppMode::connectToWiFiFailed);
     }
 
     timeSinceWiFiConnectionCheck = 0;
@@ -134,30 +144,29 @@ void handleConnectToWiFi()
 
 void handleConnectToWiFiFailed()
 {
-  if (false) //buttonA.wasReleased() || buttonB.wasReleased()
+  if (touchInput.isLeftTapped() || touchInput.isRightTapped()) //buttonA.wasReleased() || buttonB.wasReleased()
   {
-    currentAppMode = AppMode::config;
+    switchAppMode(AppMode::config);
   }
 }
 
 void handleClock()
 {
-  if (false) //buttonB.wasReleased()
+  if (touchInput.isLeftTapped())
   {
-    currentAppMode = AppMode::bitcoin;
+    switchAppMode(AppMode::bitcoin);
   }
 }
 
 void handleBitcoin()
 {
-  if (false) //buttonA.wasReleased()
+  if (touchInput.isRightTapped())
   {
-    currentAppMode = AppMode::clock;
+    switchAppMode(AppMode::clock);
   }
 
   if (false) //buttonA.wasPressedFor(2000) && buttonB.wasReleased()
   {
-    //buttonA.disableNext();
     updateBitcoinPrice();
   }
 }
@@ -166,17 +175,9 @@ String getCurrentModeString(AppMode in_appMode)
 {
   switch (in_appMode)
   {
-    case AppMode::config:
-      return String(getBatteryVoltage()) + " V";
-    break;
-
-    case AppMode::clock:
-      return timeString;
-    break;
-
-    case AppMode::bitcoin:
-      return bitcoinPrice;
-    break;
+    case AppMode::config:  return String(getBatteryVoltage()) + " V";
+    case AppMode::clock:   return timeString;
+    case AppMode::bitcoin: return bitcoinPrice;
   }
 
   return String();
@@ -186,17 +187,9 @@ int32_t getCurrentModeInteger(AppMode in_appMode)
 {
   switch (in_appMode)
   {
-    case AppMode::connectToWiFi:
-      return connectionAttemptCount;
-    break;
-
-    case AppMode::clock:
-      return displayIndicator;
-    break;
-
-    case AppMode::bitcoin:
-      return displayIndicator;
-    break;
+    case AppMode::connectToWiFi: return connectionAttemptCount;
+    case AppMode::clock:         return displayIndicator;
+    case AppMode::bitcoin:       return displayIndicator;
   }
 
   return -1;
@@ -206,18 +199,17 @@ void handleBrightnessAdjustment()
 {
   if (isOledOn && not isOledAutoOnOff && false) //buttonA.wasPressedFor(2000) && buttonB.wasPressedFor(2000)
   {
-    //buttonA.disableNext();
-    //buttonB.disableNext();
+    touchInput.reset();
     isBrightnessAdjustmentActive = not isBrightnessAdjustmentActive;
   }
 
   if (isBrightnessAdjustmentActive)
   {
-    if (true) //buttonA.wasReleased()
+    if (touchInput.isRightTapped()) //buttonA.wasReleased()
     {
       decrementBrightness();
     }
-    else if (false) //buttonB.wasReleased()
+    else if (touchInput.isLeftTapped()) //buttonB.wasReleased()
     {
       incrementBrightness();
     }
@@ -226,8 +218,7 @@ void handleBrightnessAdjustment()
 
 void handleApp(AppMode in_appMode)
 {
-  //buttonA.update();
-  //buttonB.update();
+  touchInput.update();
 
   switch (in_appMode)
   {
