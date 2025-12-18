@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "gJH24_def.h"
 #include "gJH24_power.h"
@@ -27,7 +27,7 @@ elapsedSeconds timeSinceBitcoinUpdate;
 const uint16_t MIN_BRIGHTNESS_ADJUSTMENT_INTERVAL = 200; // ms
 elapsedMillis timeSinceBrightnessAdjustment;
 
-CredentialsListPtr mockCredentialsListPtr()
+/*CredentialsListPtr mockCredentialsListPtr()
 {
   CredentialsListPtr credentialsListPtr = std::make_shared<CredentialsList>();
 
@@ -37,12 +37,11 @@ CredentialsListPtr mockCredentialsListPtr()
   }
 
   return credentialsListPtr;
-}
+}*/
 
 void switchAppMode(AppMode in_newMode)
 {
   currentAppMode = in_newMode;
-  touchInput.reset();
 }
 
 void handleConfig()
@@ -98,13 +97,13 @@ void handleLoadWiFiCredentials()
     {
       incrementCredentialsSelectionIndex(currentCredentialsListPtr->size());
     }
-    else if (false) //buttonA.isPressed() && buttonB.isPressed()
+    else if (touchInput.getMiddlePressedFor() >= 1000)
     {
       connectToWifi(currentCredentialsListPtr->at(credentialsSelectionIndex));
       connectionAttemptCount = 0;
       switchAppMode(AppMode::connectToWiFi);
     }
-    else if (false) //buttonA.wasPressedFor(2000)
+    else if (touchInput.getRightPressedFor() >= 2000)
     {
       switchAppMode(AppMode::config);
     }
@@ -144,7 +143,7 @@ void handleConnectToWiFi()
 
 void handleConnectToWiFiFailed()
 {
-  if (touchInput.isLeftTapped() || touchInput.isRightTapped()) //buttonA.wasReleased() || buttonB.wasReleased()
+  if (touchInput.isLeftTapped() || touchInput.isRightTapped())
   {
     switchAppMode(AppMode::config);
   }
@@ -165,9 +164,10 @@ void handleBitcoin()
     switchAppMode(AppMode::clock);
   }
 
-  if (false) //buttonA.wasPressedFor(2000) && buttonB.wasReleased()
+  if (touchInput.getMiddlePressedFor() >= 2000)
   {
     updateBitcoinPrice();
+    touchInput.resetPressedFor();
   }
 }
 
@@ -178,6 +178,16 @@ String getCurrentModeString(AppMode in_appMode)
     case AppMode::config:  return String(getBatteryVoltage()) + " V";
     case AppMode::clock:   return timeString;
     case AppMode::bitcoin: return bitcoinPrice;
+  }
+
+  return String();
+}
+
+String getCurrentModeString2(AppMode in_appMode)
+{
+  switch (in_appMode)
+  {
+    case AppMode::bitcoin: return bitcoinPriceTimestamp;
   }
 
   return String();
@@ -197,19 +207,18 @@ int32_t getCurrentModeInteger(AppMode in_appMode)
 
 void handleBrightnessAdjustment()
 {
-  if (isOledOn && not isOledAutoOnOff && false) //buttonA.wasPressedFor(2000) && buttonB.wasPressedFor(2000)
+  if (isOledOn && not isOledAutoOnOff && touchInput.isMiddleTapped())
   {
-    touchInput.reset();
     isBrightnessAdjustmentActive = not isBrightnessAdjustmentActive;
   }
 
   if (isBrightnessAdjustmentActive)
   {
-    if (touchInput.isRightTapped()) //buttonA.wasReleased()
+    if (touchInput.isRightTapped())
     {
       decrementBrightness();
     }
-    else if (touchInput.isLeftTapped()) //buttonB.wasReleased()
+    else if (touchInput.isLeftTapped())
     {
       incrementBrightness();
     }

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
@@ -9,6 +9,7 @@
 constexpr const char* infoDomain = "pro-api.coinmarketcap.com";
 constexpr const char* infoPath = "/v2/cryptocurrency/quotes/latest";
 String bitcoinPrice = "BTCUnset";
+String bitcoinPriceTimestamp = "TsUnset";
 
 void updateBitcoinPrice()
 {
@@ -71,6 +72,12 @@ void updateBitcoinPrice()
 
   JsonDocument jsonDocument;
   deserializeJson(jsonDocument, payload);
+  auto element = jsonDocument["data"]["BTC"][0]["quote"]["EUR"];
 
-  bitcoinPrice = jsonDocument["data"]["BTC"][0]["quote"]["EUR"]["price"].as<String>();
+  bitcoinPrice = element["price"].as<String>();
+  bitcoinPriceTimestamp = element["last_updated"].as<String>();
+  Serial.println(bitcoinPriceTimestamp);
+  bitcoinPriceTimestamp = bitcoinPriceTimestamp.substring(11, 19);
+  bitcoinPriceTimestamp = String(bitcoinPriceTimestamp.substring(0, 2).toInt() + 1) + bitcoinPriceTimestamp.substring(2);
+  Serial.println(bitcoinPriceTimestamp);
 }

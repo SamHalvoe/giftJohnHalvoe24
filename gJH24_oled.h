@@ -1,4 +1,4 @@
-/*
+﻿/*
 
 for fonts
 - u8g2_font_streamline_interface_essential_other_t
@@ -386,33 +386,35 @@ void updateIndicatorBitcoinUpdate(int32_t in_integer)
   }
 }
 
-void updateScreenBitcoin(const String& in_string, int32_t in_integer)
+void updateScreenBitcoin(const String& in_price, const String& in_priceTimestamp, int32_t in_integer)
 {
   updateIndicatorBatteryLow(in_integer);
   updateIndicatorBitcoinUpdate(in_integer);
 
+  static const uint8_t spaceWidth = 4;
+  static const uint8_t xOffset = 10;
+  static const uint8_t yOffsetA = 24;
+  static const uint8_t yOffsetB = yOffsetA + 8 + 14;
+
+  oled.setFont(u8g2_font_baby_tr);
+  oled.drawStr(xOffset, yOffsetA / 2, in_priceTimestamp.c_str());
+
   oled.setFont(u8g2_font_chargen_92_me);
-
-  const u8g2_uint_t characterWidth = oled.getStrWidth("c");
-  const uint8_t spaceWidth = 4;
-  const uint8_t xOffset = 10;
-  const uint8_t yOffsetA = 24;
-  const uint8_t yOffsetB = yOffsetA + 8 + 14;
-
+  static const u8g2_uint_t characterWidth = oled.getStrWidth("c");
   oled.drawStr(xOffset + (2 * spaceWidth) + (6 * characterWidth), yOffsetA, "1");
   drawBitcoinCharacter(xOffset + (3 * spaceWidth) + (7 * characterWidth), yOffsetA);
 
-  if (in_string.startsWith("BTC"))
+  if (in_price.startsWith("BTC"))
   {
-    drawStringXCenter(yOffsetB, in_string.c_str());
+    drawStringXCenter(yOffsetB, in_price.c_str());
   }
   else
   {
-    drawBitcoinPrice(xOffset, yOffsetB, spaceWidth, characterWidth, getBitcoinPriceStringList(in_string));
+    drawBitcoinPrice(xOffset, yOffsetB, spaceWidth, characterWidth, getBitcoinPriceStringList(in_price));
   }
 }
 
-void updateOled(AppMode in_appMode, const String& in_string, int32_t in_integer, const CredentialsListPtr in_credentialListPtr)
+void updateOled(AppMode in_appMode, const String& in_string, const String& in_string2, int32_t in_integer, const CredentialsListPtr in_credentialListPtr)
 {
   if (timeSinceOledUpdate >= OLED_UPDATE_INTERVAL)
   {
@@ -446,7 +448,7 @@ void updateOled(AppMode in_appMode, const String& in_string, int32_t in_integer,
       break;
 
       case AppMode::bitcoin:
-        updateScreenBitcoin(in_string, in_integer);
+        updateScreenBitcoin(in_string, in_string2, in_integer);
         updateBrightnessAdjustmentIndicator();
       break;
     }

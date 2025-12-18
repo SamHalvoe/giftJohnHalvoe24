@@ -1,4 +1,4 @@
-#include "gJH24_controller.h"
+﻿#include "gJH24_controller.h"
 
 void setup()
 {
@@ -36,5 +36,5 @@ void setup()
 void loop()
 {
   handleApp(currentAppMode);
-  updateOled(currentAppMode, getCurrentModeString(currentAppMode), getCurrentModeInteger(currentAppMode), currentCredentialsListPtr);
+  updateOled(currentAppMode, getCurrentModeString(currentAppMode), getCurrentModeString2(currentAppMode), getCurrentModeInteger(currentAppMode), currentCredentialsListPtr);
 }
