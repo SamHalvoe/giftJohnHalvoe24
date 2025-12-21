@@ -97,7 +97,7 @@ void handleLoadWiFiCredentials()
     {
       incrementCredentialsSelectionIndex(currentCredentialsListPtr->size());
     }
-    else if (touchInput.getMiddlePressedFor() >= 1000)
+    else if (touchInput.getMiddlePressedFor() >= 2000)
     {
       connectToWifi(currentCredentialsListPtr->at(credentialsSelectionIndex));
       connectionAttemptCount = 0;
@@ -143,7 +143,7 @@ void handleConnectToWiFi()
 
 void handleConnectToWiFiFailed()
 {
-  if (touchInput.isLeftTapped() || touchInput.isRightTapped())
+  if (touchInput.isMiddleTapped())
   {
     switchAppMode(AppMode::config);
   }

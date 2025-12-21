@@ -192,7 +192,7 @@ void updateScreenConfig(const String& in_batteryVoltage)
   oled.setFont(u8g2_font_glasstown_nbp_tr);
   drawStringXCenter(32, in_batteryVoltage.c_str());
   drawStringXCenter(48, "Select credentials source;");
-  drawStringXCenter(60, "Press left or right;");
+  drawStringXCenter(60, "Tap left or right;");
 }
 
 void updateScreenReadWiFiQRCode()
@@ -204,7 +204,7 @@ void updateScreenReadWiFiQRCode()
   
   oled.setFont(u8g2_font_glasstown_nbp_tr);
   drawStringXCenter(48, "Read WiFi QR Code;");
-  drawStringXCenter(60, "Press right to cancle;");
+  drawStringXCenter(60, "Tap right to cancle;");
 }
 
 void drawStringSSID(size_t in_index, const String& in_ssid, bool in_isSSIDSelected)
@@ -237,7 +237,7 @@ void drawScreenLoadWiFiCredentials(const CredentialsList& in_credentialList)
                    offset + index == credentialsSelectionIndex);
   }
 
-  drawStringXCenter(48, "Press both to select;");
+  drawStringXCenter(48, "Hold middle to select;");
   drawStringXCenter(60, "Hold left to return;");
 }
 
@@ -250,7 +250,7 @@ void drawScreenLoadWiFiCredentialsEmpty()
   
   oled.setFont(u8g2_font_glasstown_nbp_tr);
   drawStringXCenter(48, "No saved credentials;");
-  drawStringXCenter(60, "Press left to return;");
+  drawStringXCenter(60, "Tap left to return;");
 }
 
 void updateScreenLoadWiFiCredentials(const CredentialsListPtr in_credentialListPtr)
@@ -283,7 +283,7 @@ void updateScreenConnectToWiFi(uint8_t in_attemptCount)
 void updateScreenConnectToWiFiFailed()
 {
   drawStringXCenter(32, "Connection to WiFi failed;");
-  drawStringXCenter(48, "Press any button to continue;");
+  drawStringXCenter(48, "Tap middle to continue;");
 }
 
 void updateIndicatorBatteryLow(int32_t in_integer)

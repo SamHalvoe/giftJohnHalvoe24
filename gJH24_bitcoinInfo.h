@@ -2,21 +2,51 @@
 
 #include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
+#include <ctime>
 
 #include "arduino_secrets.h"
 #include "gJH24_WiFi.h"
 
-constexpr const char* infoDomain = "pro-api.coinmarketcap.com";
-constexpr const char* infoPath = "/v2/cryptocurrency/quotes/latest";
-String bitcoinPrice = "BTCUnset";
+constexpr const char* infoDomain = "mempool.space";
+constexpr const char* infoPath = "/api/v1/prices";
 String bitcoinPriceTimestamp = "TsUnset";
+String bitcoinPrice = "BTCUnset";
+
+String timeStructToString(const tm* in_timeStruct)
+{
+  String timeString;
+  
+  if (in_timeStruct->tm_hour < 10)
+  {
+    timeString.concat('0');
+  }
+
+  timeString.concat(in_timeStruct->tm_hour);
+  timeString.concat(':');
+
+  if (in_timeStruct->tm_min < 10)
+  {
+    timeString.concat('0');
+  }
+
+  timeString.concat(in_timeStruct->tm_min);
+  timeString.concat(':');
+
+  if (in_timeStruct->tm_sec < 10)
+  {
+    timeString.concat('0');
+  }
+
+  timeString.concat(in_timeStruct->tm_sec);
+
+  return timeString;
+}
 
 void updateBitcoinPrice()
 {
   if (not isConnectedToWifi())
   {
     bitcoinPrice = "BTCNoWiFi";
-
     return;
   }
 
@@ -26,7 +56,6 @@ void updateBitcoinPrice()
   if (not client.connect(infoDomain, 443))
   {
     bitcoinPrice = "BTCErrCon";
-
     return;
   }
 
@@ -34,10 +63,6 @@ void updateBitcoinPrice()
   getRequest.concat("https://");
   getRequest.concat(infoDomain);
   getRequest.concat(infoPath);
-  getRequest.concat("?CMC_PRO_API_KEY=");
-  getRequest.concat(CRYPTO_API_KEY);
-  getRequest.concat("&symbol=BTC");
-  getRequest.concat("&convert=EUR");
   getRequest.concat(" HTTP/1.0");
 
   client.println(getRequest);
@@ -72,12 +97,8 @@ void updateBitcoinPrice()
 
   JsonDocument jsonDocument;
   deserializeJson(jsonDocument, payload);
-  auto element = jsonDocument["data"]["BTC"][0]["quote"]["EUR"];
-
-  bitcoinPrice = element["price"].as<String>();
-  bitcoinPriceTimestamp = element["last_updated"].as<String>();
-  Serial.println(bitcoinPriceTimestamp);
-  bitcoinPriceTimestamp = bitcoinPriceTimestamp.substring(11, 19);
-  bitcoinPriceTimestamp = String(bitcoinPriceTimestamp.substring(0, 2).toInt() + 1) + bitcoinPriceTimestamp.substring(2);
-  Serial.println(bitcoinPriceTimestamp);
+  
+  time_t priceTimestap = jsonDocument["time"].as<time_t>() + 3600; // + 3600 seconds => 1 hour offset from UTC (to Berlin time)
+  bitcoinPriceTimestamp = timeStructToString(std::gmtime(&priceTimestap));
+  bitcoinPrice = jsonDocument["EUR"].as<String>();
 }
