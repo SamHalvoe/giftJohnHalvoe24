@@ -2,15 +2,17 @@
 
 #include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
+#include <elapsedMillis.h>
 #include <ctime>
 
 #include "arduino_secrets.h"
 #include "gJH24_WiFi.h"
 #include "gJH24_Time.h"
 
-constexpr const char* infoDomain = "mempool.space";
-constexpr const char* infoPathPrice = "/api/v1/prices";
-constexpr const char* infoPathBlockHeight = "/api/blocks/tip/height";
+const char* infoDomain = "mempool.space";
+const char* infoPathPrice = "/api/v1/prices";
+const char* infoPathBlockHeight = "/api/blocks/tip/height";
+
 String bitcoinPriceTimestamp = "PTsUnset";
 String bitcoinPrice = "PriUnset";
 String blockHeightTimestamp = "HTsUnset";
@@ -104,7 +106,20 @@ void updateBitcoinPrice()
   
   time_t priceTimestap = jsonDocument["time"].as<time_t>() + 3600; // + 3600 seconds => 1 hour offset from UTC (to Berlin time)
   bitcoinPriceTimestamp = timeStructToString(std::gmtime(&priceTimestap));
-  bitcoinPrice = jsonDocument["EUR"].as<String>();
+
+  switch (currentCurrency)
+  {
+    case Currency::euro:
+      bitcoinPrice = jsonDocument["EUR"].as<String>();
+      break;
+
+    case Currency::usDollar:
+      bitcoinPrice = jsonDocument["USD"].as<String>();
+      break;
+
+    default:
+      bitcoinPrice = "PriErrCur";
+  }
 }
 
 void updateBlockHeight()

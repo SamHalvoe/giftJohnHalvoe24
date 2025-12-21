@@ -34,3 +34,5 @@ enum class Currency : uint8_t
   euro,
   usDollar
 };
+
+Currency currentCurrency = Currency::euro;

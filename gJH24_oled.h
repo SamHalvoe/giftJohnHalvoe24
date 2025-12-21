@@ -426,7 +426,7 @@ void updateScreenBitcoin(const String& in_price, const String& in_priceTimestamp
   }
   else
   {
-    drawNumberString(xOffset, yOffsetB, spaceWidth, characterWidth, splitNumberStringAtThousandsPlace(in_price), Currency::euro);
+    drawNumberString(xOffset, yOffsetB, spaceWidth, characterWidth, splitNumberStringAtThousandsPlace(in_price), currentCurrency);
   }
 }
 

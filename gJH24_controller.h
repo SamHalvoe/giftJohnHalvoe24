@@ -21,9 +21,11 @@ elapsedMillis timeSinceQRCodeReading;
 const uint16_t TIME_UPDATE_INTERVAL = 300; // ms
 elapsedMillis timeSinceTimeUpdate = TIME_UPDATE_INTERVAL;
 
-const uint16_t BITCOIN_UPDATE_INTERVAL = 600; // s
-elapsedSeconds timeSinceBitcoinUpdate;
+const uint16_t MIN_PRICE_UPDATE_DELAY = 10; // s
+const uint16_t PRICE_UPDATE_INTERVAL = 600; // s
+elapsedSeconds timeSincePriceUpdate;
 
+const uint16_t MIN_BLOCK_HEIGHT_UPDATE_DELAY = 10; // s
 const uint16_t BLOCK_HEIGHT_UPDATE_INTERVAL = 300; // s
 elapsedSeconds timeSinceBlockHeightUpdate;
 
@@ -56,7 +58,6 @@ void handleConfig()
   else if (touchInput.isLeftTapped())
   {
     currentCredentialsListPtr = readCredentialsList(); //mockCredentialsListPtr();
-
     switchAppMode(AppMode::loadWiFiCredentials);
   }
 }
@@ -125,7 +126,7 @@ void handleConnectToWiFi()
     {
       saveCredentials(currentCredentials);
       configurateTime();
-      timeSinceBitcoinUpdate = BITCOIN_UPDATE_INTERVAL;
+      timeSincePriceUpdate = PRICE_UPDATE_INTERVAL;
       timeSinceBlockHeightUpdate = BLOCK_HEIGHT_UPDATE_INTERVAL;
       switchAppMode(AppMode::clock);
     }
@@ -168,15 +169,22 @@ void handleBitcoin()
     switchAppMode(AppMode::clock);
   }
 
-  if (touchInput.getMiddlePressedFor() >= 2000)
+  if (touchInput.getRightPressedFor() >= 2000 && timeSincePriceUpdate > MIN_PRICE_UPDATE_DELAY)
   {
+    currentCurrency = (currentCurrency == Currency::euro ? Currency::usDollar : Currency::euro);
     updateBitcoinPrice();
-    touchInput.resetPressedFor();
+    timeSincePriceUpdate = 0;
   }
 
   if (touchInput.isLeftTapped())
   {
     switchAppMode(AppMode::blockHeight);
+  }
+
+  if (touchInput.getLeftPressedFor() >= 2000 && timeSincePriceUpdate >= MIN_PRICE_UPDATE_DELAY)
+  {
+    updateBitcoinPrice();
+    timeSincePriceUpdate = 0;
   }
 }
 
@@ -187,10 +195,10 @@ void handleBlockHeight()
     switchAppMode(AppMode::bitcoin);
   }
 
-  if (touchInput.getMiddlePressedFor() >= 2000)
+  if (touchInput.getLeftPressedFor() >= 2000 && timeSinceBlockHeightUpdate >= MIN_BLOCK_HEIGHT_UPDATE_DELAY)
   {
     updateBlockHeight();
-    touchInput.resetPressedFor();
+    timeSinceBlockHeightUpdate = 0;
   }
 }
 
@@ -313,7 +321,7 @@ void handleApp(AppMode in_appMode)
     timeSinceTimeUpdate = 0;
   }
 
-  if (timeSinceBitcoinUpdate >= BITCOIN_UPDATE_INTERVAL)
+  if (timeSincePriceUpdate >= PRICE_UPDATE_INTERVAL)
   {
     updateBitcoinPrice();
 
@@ -326,9 +334,9 @@ void handleApp(AppMode in_appMode)
       displayIndicator = displayIndicatorBitcoinUpdate_true;
     }
 
-    timeSinceBitcoinUpdate = 0;
+    timeSincePriceUpdate = 0;
   }
-  else if (timeSinceBitcoinUpdate > 10)
+  else if (timeSincePriceUpdate > 10)
   {
     if (isOledAutoOnOff)
     {

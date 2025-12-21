@@ -1,11 +1,11 @@
 ﻿#pragma once
 
-#include "time.h"
-#include "esp_sntp.h"
+#include <time.h>
+#include <esp_sntp.h>
 
-constexpr const char* NTP_SERVER_NAME = "de.pool.ntp.org";
-constexpr const long GMT_OFFSET_SECONDS = 3600;
-constexpr const int DAYLIGHT_OFFSET_SECONDS = 3600;
+const char* NTP_SERVER_NAME = "de.pool.ntp.org";
+const long GMT_OFFSET_SECONDS = 3600;
+const int DAYLIGHT_OFFSET_SECONDS = 3600;
 
 bool isTimeConfigured = false;
 int lastCompleteHour = -1;

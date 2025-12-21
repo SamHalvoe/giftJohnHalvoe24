@@ -9,8 +9,8 @@ class TouchInput
     enum class TouchState : uint8_t
     {
       isReleased = 0,
-      isPressed = 1,
-      isTapped = 2
+      isPressed,
+      isTapped
     };
 
   private:
@@ -21,7 +21,7 @@ class TouchInput
     elapsedMillis m_leftPadPressedFor;
     elapsedMillis m_middlePadPressedFor;
     elapsedMillis m_rightPadPressedFor;
-    const unsigned long m_maxTapTime = 1000; // ms
+    const unsigned long m_maxPressedTimeForTap = 750; // ms
 
   private:
     void updateLeft()
@@ -35,7 +35,7 @@ class TouchInput
 
         m_leftPadState = TouchState::isPressed;
       }
-      else if (m_leftPadState == TouchState::isPressed && getLeftPressedFor() <= m_maxTapTime)
+      else if (m_leftPadState == TouchState::isPressed && m_leftPadPressedFor <= m_maxPressedTimeForTap)
       {
         m_leftPadState = TouchState::isTapped;
       }
@@ -56,7 +56,7 @@ class TouchInput
 
         m_middlePadState = TouchState::isPressed;
       }
-      else if (m_middlePadState == TouchState::isPressed && getMiddlePressedFor() <= m_maxTapTime)
+      else if (m_middlePadState == TouchState::isPressed && m_middlePadPressedFor <= m_maxPressedTimeForTap)
       {
         m_middlePadState = TouchState::isTapped;
       }
@@ -77,7 +77,7 @@ class TouchInput
 
         m_rightPadState = TouchState::isPressed;
       }
-      else if (m_rightPadState == TouchState::isPressed && getRightPressedFor() <= m_maxTapTime)
+      else if (m_rightPadState == TouchState::isPressed && m_rightPadPressedFor <= m_maxPressedTimeForTap)
       {
         m_rightPadState = TouchState::isTapped;
       }
@@ -96,20 +96,6 @@ class TouchInput
       m_touchSensor.setInterruptDisabled();
       m_touchSensor.setSensitivity(SENSITIVITY_32X);
       return true;
-    }
-
-    void resetStates()
-    {
-      m_leftPadState = TouchState::isReleased;
-      m_middlePadState = TouchState::isReleased;
-      m_rightPadState = TouchState::isReleased;
-    }
-
-    void resetPressedFor()
-    {
-      m_leftPadPressedFor = 0;
-      m_middlePadPressedFor = 0;
-      m_rightPadPressedFor = 0;
     }
 
     void update()
