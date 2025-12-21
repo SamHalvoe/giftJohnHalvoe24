@@ -6,11 +6,15 @@
 
 #include "arduino_secrets.h"
 #include "gJH24_WiFi.h"
+#include "gJH24_Time.h"
 
 constexpr const char* infoDomain = "mempool.space";
-constexpr const char* infoPath = "/api/v1/prices";
-String bitcoinPriceTimestamp = "TsUnset";
-String bitcoinPrice = "BTCUnset";
+constexpr const char* infoPathPrice = "/api/v1/prices";
+constexpr const char* infoPathBlockHeight = "/api/blocks/tip/height";
+String bitcoinPriceTimestamp = "PTsUnset";
+String bitcoinPrice = "PriUnset";
+String blockHeightTimestamp = "HTsUnset";
+String blockHeight = "HeiUnset";
 
 String timeStructToString(const tm* in_timeStruct)
 {
@@ -46,7 +50,7 @@ void updateBitcoinPrice()
 {
   if (not isConnectedToWifi())
   {
-    bitcoinPrice = "BTCNoWiFi";
+    bitcoinPrice = "PriNoWiFi";
     return;
   }
 
@@ -55,14 +59,14 @@ void updateBitcoinPrice()
 
   if (not client.connect(infoDomain, 443))
   {
-    bitcoinPrice = "BTCErrCon";
+    bitcoinPrice = "PriErrCon";
     return;
   }
 
   String getRequest = "GET ";
   getRequest.concat("https://");
   getRequest.concat(infoDomain);
-  getRequest.concat(infoPath);
+  getRequest.concat(infoPathPrice);
   getRequest.concat(" HTTP/1.0");
 
   client.println(getRequest);
@@ -101,4 +105,62 @@ void updateBitcoinPrice()
   time_t priceTimestap = jsonDocument["time"].as<time_t>() + 3600; // + 3600 seconds => 1 hour offset from UTC (to Berlin time)
   bitcoinPriceTimestamp = timeStructToString(std::gmtime(&priceTimestap));
   bitcoinPrice = jsonDocument["EUR"].as<String>();
+}
+
+void updateBlockHeight()
+{
+  if (not isConnectedToWifi())
+  {
+    blockHeight = "HeiNoWiFi";
+    return;
+  }
+
+  WiFiClientSecure client;
+  client.setCACert(CERTIFICATE);
+
+  if (not client.connect(infoDomain, 443))
+  {
+    blockHeight = "HeiErrCon";
+    return;
+  }
+
+  String getRequest = "GET ";
+  getRequest.concat("https://");
+  getRequest.concat(infoDomain);
+  getRequest.concat(infoPathBlockHeight);
+  getRequest.concat(" HTTP/1.0");
+
+  client.println(getRequest);
+  client.print("Host: ");
+  client.println(infoDomain);
+  client.println("Connection: close");
+  client.println();
+
+  String response;
+
+  while (client.connected())
+  {
+    String line = client.readStringUntil('\n');
+
+    if (line == "\r") // end of response
+    {
+      break;
+    }
+
+    response.concat(line);
+    response.concat('\n');
+  }
+
+  String payload;
+
+  while (client.available())
+  {
+    payload.concat(static_cast<char>(client.read()));
+  }
+
+  client.stop();
+  
+  blockHeightTimestamp = timeString;
+  blockHeight = payload;
+  blockHeight.trim();
 }

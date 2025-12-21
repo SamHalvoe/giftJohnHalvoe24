@@ -35,6 +35,7 @@ elapsedMillis timeSinceOledUpdate = OLED_UPDATE_INTERVAL;
 constexpr const uint16_t iconQRCode = 48 + 6;
 constexpr const uint16_t iconFloppy = 48 + 3;
 constexpr const uint16_t iconBatteryLow = 48 + 1;
+constexpr const uint16_t iconBlockHeight = 48 + 15;
 constexpr const uint16_t yOffsetIcon = 32;
 
 size_t credentialsSelectionIndex = 0;
@@ -316,66 +317,81 @@ void drawEuroCharacter(u8g2_uint_t in_x, u8g2_uint_t in_y)
   oled.drawGlyph(in_x, in_y, 8364 /* '€' */);
 }
 
-std::vector<String> getBitcoinPriceStringList(const String& in_string)
+void drawUsDollarCharacter(u8g2_uint_t in_x, u8g2_uint_t in_y)
 {
-  String bitcoinPrice = splitString(in_string, { '.' })[0]; // get pre-decimal place
+  oled.drawGlyph(in_x, in_y, 36 /* '$' */);
+}
+
+std::vector<String> splitNumberStringAtThousandsPlace(const String& in_string)
+{
+  String string = splitString(in_string, { '.' })[0]; // get pre-decimal place
   const size_t numberSegmentSize = 3;
-  const size_t removeCount = bitcoinPrice.length() % numberSegmentSize;
-  std::vector<String> bitcoinPriceStringList;
+  const size_t removeCount = string.length() % numberSegmentSize;
+  std::vector<String> stringList;
   String tempString;
 
   if (removeCount > 0)
   {
-    bitcoinPriceStringList.emplace_back(bitcoinPrice.substring(0, removeCount));
-    bitcoinPrice.remove(0, removeCount);
+    stringList.emplace_back(string.substring(0, removeCount));
+    string.remove(0, removeCount);
   }
 
-  while (bitcoinPrice.length() > 0)
+  while (string.length() > 0)
   {
-    tempString.concat(bitcoinPrice[0]);
-    bitcoinPrice.remove(0, 1);
+    tempString.concat(string[0]);
+    string.remove(0, 1);
 
     if (tempString.length() == 3)
     {
-      bitcoinPriceStringList.emplace_back(tempString);
+      stringList.emplace_back(tempString);
       tempString.remove(0, tempString.length());
     }
   }
 
-  return bitcoinPriceStringList;
+  return stringList;
 }
 
-void drawBitcoinPrice(uint8_t in_xOffset, uint8_t in_yOffset,
+void drawNumberString(uint8_t in_xOffset, uint8_t in_yOffset,
                       uint8_t in_spaceWidth, u8g2_uint_t in_characterWidth, 
-                      const std::vector<String>& in_bitcoinPriceStringList)
+                      const std::vector<String>& in_numberStringList, Currency in_currencyToDraw)
 {
+  uint8_t currencyCharacterOffset = (in_currencyToDraw == Currency::none ? 2 : 1);
   size_t index = 0;
 
-  if (in_bitcoinPriceStringList.size() >= 3)
+  if (in_numberStringList.size() >= 3)
   {
     oled.drawStr(in_xOffset, in_yOffset,
-                 in_bitcoinPriceStringList[index].c_str());
+                 in_numberStringList[index].c_str());
 
     ++index;
   }
 
-  if (in_bitcoinPriceStringList.size() >= 2)
+  if (in_numberStringList.size() >= 2)
   {
-    oled.drawStr(in_xOffset + in_spaceWidth + ((1 + (3 - in_bitcoinPriceStringList[index].length())) * in_characterWidth),
+    oled.drawStr(in_xOffset + (currencyCharacterOffset * in_spaceWidth) + ((currencyCharacterOffset + (3 - in_numberStringList[index].length())) * in_characterWidth),
                  in_yOffset,
-                 in_bitcoinPriceStringList[index].c_str());
+                 in_numberStringList[index].c_str());
 
     ++index;
   }
 
-  if (in_bitcoinPriceStringList.size() >= 1)
+  if (in_numberStringList.size() >= 1)
   {
-    oled.drawStr(in_xOffset + (2 * in_spaceWidth) + ((4 + (3 - in_bitcoinPriceStringList[index].length())) * in_characterWidth),
+    oled.drawStr(in_xOffset + ((1 + currencyCharacterOffset) * in_spaceWidth) + ((currencyCharacterOffset + 3 + (3 - in_numberStringList[index].length())) * in_characterWidth),
                  in_yOffset,
-                 in_bitcoinPriceStringList[index].c_str());
+                 in_numberStringList[index].c_str());
   }
   
-  drawEuroCharacter(in_xOffset + (3 * in_spaceWidth) + (7 * in_characterWidth), in_yOffset);
+  switch (in_currencyToDraw)
+  {
+    case Currency::euro:
+      drawEuroCharacter(in_xOffset + (3 * in_spaceWidth) + (7 * in_characterWidth), in_yOffset);
+      break;
+
+    case Currency::usDollar:
+      drawUsDollarCharacter(in_xOffset + (3 * in_spaceWidth) + (7 * in_characterWidth), in_yOffset);
+      break;
+  }
 }
 
 void updateIndicatorBitcoinUpdate(int32_t in_integer)
@@ -404,13 +420,44 @@ void updateScreenBitcoin(const String& in_price, const String& in_priceTimestamp
   oled.drawStr(xOffset + (2 * spaceWidth) + (6 * characterWidth), yOffsetA, "1");
   drawBitcoinCharacter(xOffset + (3 * spaceWidth) + (7 * characterWidth), yOffsetA);
 
-  if (in_price.startsWith("BTC"))
+  if (in_price.startsWith("Pri"))
   {
     drawStringXCenter(yOffsetB, in_price.c_str());
   }
   else
   {
-    drawBitcoinPrice(xOffset, yOffsetB, spaceWidth, characterWidth, getBitcoinPriceStringList(in_price));
+    drawNumberString(xOffset, yOffsetB, spaceWidth, characterWidth, splitNumberStringAtThousandsPlace(in_price), Currency::euro);
+  }
+}
+
+void updateScreenBlockHeight(const String& in_blockHeight, const String& in_blockHeightTimestamp, int32_t in_integer)
+{
+  updateIndicatorBatteryLow(in_integer);
+
+  static const uint8_t spaceWidth = 4;
+  static const uint8_t xOffset = 10;
+  static const uint8_t yOffsetA = 24;
+  static const uint8_t yOffsetB = yOffsetA + 8 + 14;
+
+  oled.setFont(u8g2_font_baby_tr);
+  oled.drawStr(xOffset, yOffsetA / 2, in_blockHeightTimestamp.c_str());
+
+  oled.setFont(u8g2_font_chargen_92_me);
+  static const u8g2_uint_t characterWidth = oled.getStrWidth("c");
+  drawBitcoinCharacter(xOffset + (3 * spaceWidth) + (7 * characterWidth), yOffsetA);
+
+  oled.setFont(u8g2_font_streamline_design_t);
+  oled.drawGlyph(xOffset + (3 * spaceWidth) + (5 * characterWidth), yOffsetA + 4, iconBlockHeight);
+
+  oled.setFont(u8g2_font_chargen_92_me);
+
+  if (in_blockHeight.startsWith("Hei"))
+  {
+    drawStringXCenter(yOffsetB, in_blockHeight.c_str());
+  }
+  else
+  {
+    drawNumberString(xOffset, yOffsetB, spaceWidth, characterWidth, splitNumberStringAtThousandsPlace(in_blockHeight), Currency::none);
   }
 }
 
@@ -451,10 +498,14 @@ void updateOled(AppMode in_appMode, const String& in_string, const String& in_st
         updateScreenBitcoin(in_string, in_string2, in_integer);
         updateBrightnessAdjustmentIndicator();
       break;
+
+      case AppMode::blockHeight:
+        updateScreenBlockHeight(in_string, in_string2, in_integer);
+        updateBrightnessAdjustmentIndicator();
+      break;
     }
 
     oled.sendBuffer();
-
     timeSinceOledUpdate = 0;
   }
 }

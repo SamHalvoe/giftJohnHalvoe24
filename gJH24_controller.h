@@ -24,6 +24,9 @@ elapsedMillis timeSinceTimeUpdate = TIME_UPDATE_INTERVAL;
 const uint16_t BITCOIN_UPDATE_INTERVAL = 600; // s
 elapsedSeconds timeSinceBitcoinUpdate;
 
+const uint16_t BLOCK_HEIGHT_UPDATE_INTERVAL = 300; // s
+elapsedSeconds timeSinceBlockHeightUpdate;
+
 const uint16_t MIN_BRIGHTNESS_ADJUSTMENT_INTERVAL = 200; // ms
 elapsedMillis timeSinceBrightnessAdjustment;
 
@@ -122,7 +125,8 @@ void handleConnectToWiFi()
     {
       saveCredentials(currentCredentials);
       configurateTime();
-      updateBitcoinPrice();
+      timeSinceBitcoinUpdate = BITCOIN_UPDATE_INTERVAL;
+      timeSinceBlockHeightUpdate = BLOCK_HEIGHT_UPDATE_INTERVAL;
       switchAppMode(AppMode::clock);
     }
     else
@@ -169,15 +173,35 @@ void handleBitcoin()
     updateBitcoinPrice();
     touchInput.resetPressedFor();
   }
+
+  if (touchInput.isLeftTapped())
+  {
+    switchAppMode(AppMode::blockHeight);
+  }
+}
+
+void handleBlockHeight()
+{
+  if (touchInput.isRightTapped())
+  {
+    switchAppMode(AppMode::bitcoin);
+  }
+
+  if (touchInput.getMiddlePressedFor() >= 2000)
+  {
+    updateBlockHeight();
+    touchInput.resetPressedFor();
+  }
 }
 
 String getCurrentModeString(AppMode in_appMode)
 {
   switch (in_appMode)
   {
-    case AppMode::config:  return String(getBatteryVoltage()) + " V";
-    case AppMode::clock:   return timeString;
-    case AppMode::bitcoin: return bitcoinPrice;
+    case AppMode::config:      return String(getBatteryVoltage()) + " V";
+    case AppMode::clock:       return timeString;
+    case AppMode::bitcoin:     return bitcoinPrice;
+    case AppMode::blockHeight: return blockHeight;
   }
 
   return String();
@@ -187,7 +211,8 @@ String getCurrentModeString2(AppMode in_appMode)
 {
   switch (in_appMode)
   {
-    case AppMode::bitcoin: return bitcoinPriceTimestamp;
+    case AppMode::bitcoin:     return bitcoinPriceTimestamp;
+    case AppMode::blockHeight: return blockHeightTimestamp;
   }
 
   return String();
@@ -200,6 +225,7 @@ int32_t getCurrentModeInteger(AppMode in_appMode)
     case AppMode::connectToWiFi: return connectionAttemptCount;
     case AppMode::clock:         return displayIndicator;
     case AppMode::bitcoin:       return displayIndicator;
+    case AppMode::blockHeight:   return displayIndicator;
   }
 
   return -1;
@@ -268,6 +294,15 @@ void handleApp(AppMode in_appMode)
         handleBitcoin();
       }
     break;
+
+    case AppMode::blockHeight:
+      handleBrightnessAdjustment();
+
+      if (not isBrightnessAdjustmentActive)
+      {
+        handleBlockHeight();
+      }
+    break;
   }
 
   if (timeSinceTimeUpdate >= TIME_UPDATE_INTERVAL)
@@ -303,11 +338,22 @@ void handleApp(AppMode in_appMode)
     displayIndicator = displayIndicator_false;
   }
 
-  if (getBatteryVoltage() < 3.70F)
+  if (timeSinceBlockHeightUpdate >= BLOCK_HEIGHT_UPDATE_INTERVAL)
   {
+    updateBlockHeight();
+    timeSinceBlockHeightUpdate = 0;
+  }
+
+  if (getBatteryVoltage() <= 3.70f)
+  {
+    if (not isOledOn)
+    {
+      turnOledOn();
+    }
+
     displayIndicator = displayIndicatorBatteryLow_true;
   }
-  else
+  else if (displayIndicator == displayIndicatorBatteryLow_true)
   {
     displayIndicator = displayIndicator_false;
   }

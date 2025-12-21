@@ -14,7 +14,7 @@ struct WiFiCredentials
 using CredentialsList = std::vector<WiFiCredentials>;
 using CredentialsListPtr = std::shared_ptr<CredentialsList>;
 
-enum class AppMode
+enum class AppMode : uint8_t
 {
   config = 0,
   readWiFiQRCode,
@@ -22,7 +22,15 @@ enum class AppMode
   connectToWiFi,
   connectToWiFiFailed,
   clock,
-  bitcoin
+  bitcoin,
+  blockHeight
 };
 
 AppMode currentAppMode = AppMode::config;
+
+enum class Currency : uint8_t
+{
+  none = 0,
+  euro,
+  usDollar
+};
