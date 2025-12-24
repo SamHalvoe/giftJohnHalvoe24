@@ -18,32 +18,23 @@ String bitcoinPrice = "PriUnset";
 String blockHeightTimestamp = "HTsUnset";
 String blockHeight = "HeiUnset";
 
-String timeStructToString(const tm* in_timeStruct)
+String timeStructToString(const tm* in_timeStruct, bool in_includesSeconds = false)
 {
   String timeString;
   
-  if (in_timeStruct->tm_hour < 10)
-  {
-    timeString.concat('0');
-  }
-
+  if (in_timeStruct->tm_hour < 10) timeString.concat('0');
   timeString.concat(in_timeStruct->tm_hour);
+
   timeString.concat(':');
-
-  if (in_timeStruct->tm_min < 10)
-  {
-    timeString.concat('0');
-  }
-
+  if (in_timeStruct->tm_min < 10) timeString.concat('0');
   timeString.concat(in_timeStruct->tm_min);
-  timeString.concat(':');
 
-  if (in_timeStruct->tm_sec < 10)
+  if (in_includesSeconds)
   {
-    timeString.concat('0');
+    timeString.concat(':');
+    if (in_timeStruct->tm_sec < 10) timeString.concat('0');
+    timeString.concat(in_timeStruct->tm_sec);
   }
-
-  timeString.concat(in_timeStruct->tm_sec);
 
   return timeString;
 }

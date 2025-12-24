@@ -10,6 +10,7 @@ see https://streamlinehq.com
 #pragma once
 
 #include <vector>
+#include <array>
 
 #include <elapsedMillis.h>
 #include <U8g2lib.h>
@@ -54,6 +55,28 @@ const uint8_t brightnessStep = 64;
 bool isBrightnessAdjustmentActive = false;
 bool isOledOn = true;
 bool isOledAutoOnOff = false;
+
+struct HalvoeFont
+{
+  public:
+    const uint8_t* m_font = nullptr;
+    bool m_drawDoubleSize = false;
+};
+
+std::array<HalvoeFont, 7> fontArray = { HalvoeFont{ u8g2_font_chargen_92_me, true },
+                                        HalvoeFont{ u8g2_font_chargen_92_me, false },
+                                        HalvoeFont{ u8g2_font_freedoomr25_tn, false },
+                                        HalvoeFont{ u8g2_font_maniac_tn, false },
+                                        HalvoeFont{ u8g2_font_bubble_tn, false },
+                                        HalvoeFont{ u8g2_font_osb26_tn, false },
+                                        HalvoeFont{ u8g2_font_mystery_quest_32_tn, false } };
+std::size_t fontIndex = 0;
+
+void incrementFontIndex()
+{
+  ++fontIndex;
+  if (fontIndex == fontArray.size()) fontIndex = 0;
+}
 
 void turnOledOn()
 {
@@ -177,7 +200,24 @@ void toggleMirrorOled()
 void drawStringXCenter(uint16_t in_y, const char* in_string)
 {
   const uint16_t stringWidth = oled.getStrWidth(in_string);
-  oled.drawStr((128 - stringWidth) / 2, in_y, in_string);
+  oled.drawStr((oled.getDisplayWidth() - stringWidth) / 2, in_y, in_string);
+}
+
+void drawStringCenter(const char* in_string)
+{
+  const uint16_t stringWidth = oled.getStrWidth(in_string);
+  oled.setFontPosCenter();
+
+  if (fontArray[fontIndex].m_drawDoubleSize)
+  {
+    oled.drawStrX2((oled.getDisplayWidth() - (stringWidth * 2)) / 2, oled.getDisplayHeight() / 2, in_string);
+  }
+  else
+  {
+    oled.drawStr((oled.getDisplayWidth() - stringWidth) / 2, oled.getDisplayHeight() / 2, in_string);
+  }
+
+  oled.setFontPosBaseline();
 }
 
 void updateScreenConfig(const String& in_batteryVoltage)
@@ -299,8 +339,8 @@ void updateIndicatorBatteryLow(int32_t in_integer)
 void updateScreenClock(const String& in_string, int32_t in_integer)
 {
   updateIndicatorBatteryLow(in_integer);
-  oled.setFont(u8g2_font_mystery_quest_32_tn);
-  drawStringXCenter(40, in_string.c_str());
+  oled.setFont(fontArray[fontIndex].m_font);
+  drawStringCenter(in_string.c_str());
 }
 
 void drawBitcoinCharacter(u8g2_uint_t in_x, u8g2_uint_t in_y)

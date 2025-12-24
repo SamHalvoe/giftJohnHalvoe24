@@ -27,7 +27,7 @@ void configurateTime()
   lastCompleteHour = timeInfo.tm_hour;
 }
 
-void getLocalTimeString()
+void getLocalTimeString(bool in_includesSeconds = false)
 {
   if (not isTimeConfigured)
   {
@@ -40,12 +40,15 @@ void getLocalTimeString()
 
   if (timeInfo.tm_hour < 10) timeString.concat('0');
   timeString.concat(timeInfo.tm_hour);
+
   timeString.concat(':');
-  
   if (timeInfo.tm_min < 10) timeString.concat('0');
   timeString.concat(timeInfo.tm_min);
-  timeString.concat(':');
 
-  if (timeInfo.tm_sec < 10) timeString.concat('0');
-  timeString.concat(timeInfo.tm_sec);
+  if (in_includesSeconds)
+  {
+    timeString.concat(':');
+    if (timeInfo.tm_sec < 10) timeString.concat('0');
+    timeString.concat(timeInfo.tm_sec);
+  }
 }

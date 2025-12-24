@@ -4,7 +4,7 @@ void setup()
 {
   Serial.begin(115200);
   elapsedMillis timeSinceSerialbegin;
-  while (not Serial && timeSinceSerialbegin < 3000) { delay(10); }
+  while (not Serial && timeSinceSerialbegin < 3000) delay(100);
 
   Serial.println("setup started");
   

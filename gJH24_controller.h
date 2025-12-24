@@ -32,6 +32,8 @@ elapsedSeconds timeSinceBlockHeightUpdate;
 const uint16_t MIN_BRIGHTNESS_ADJUSTMENT_INTERVAL = 200; // ms
 elapsedMillis timeSinceBrightnessAdjustment;
 
+const uint16_t LONG_PRESS_DURATION = 1000; // ms
+
 /*CredentialsListPtr mockCredentialsListPtr()
 {
   CredentialsListPtr credentialsListPtr = std::make_shared<CredentialsList>();
@@ -101,13 +103,13 @@ void handleLoadWiFiCredentials()
     {
       incrementCredentialsSelectionIndex(currentCredentialsListPtr->size());
     }
-    else if (touchInput.getMiddlePressedFor() >= 2000)
+    else if (touchInput.getMiddlePressedFor() >= LONG_PRESS_DURATION)
     {
       connectToWifi(currentCredentialsListPtr->at(credentialsSelectionIndex));
       connectionAttemptCount = 0;
       switchAppMode(AppMode::connectToWiFi);
     }
-    else if (touchInput.getRightPressedFor() >= 2000)
+    else if (touchInput.getRightPressedFor() >= LONG_PRESS_DURATION)
     {
       switchAppMode(AppMode::config);
     }
@@ -156,6 +158,11 @@ void handleConnectToWiFiFailed()
 
 void handleClock()
 {
+  if (touchInput.isRightTapped())
+  {
+    incrementFontIndex();
+  }
+
   if (touchInput.isLeftTapped())
   {
     switchAppMode(AppMode::bitcoin);
@@ -169,7 +176,7 @@ void handleBitcoin()
     switchAppMode(AppMode::clock);
   }
 
-  if (touchInput.getRightPressedFor() >= 2000 && timeSincePriceUpdate > MIN_PRICE_UPDATE_DELAY)
+  if (touchInput.getRightPressedFor() >= LONG_PRESS_DURATION && timeSincePriceUpdate > MIN_PRICE_UPDATE_DELAY)
   {
     currentCurrency = (currentCurrency == Currency::euro ? Currency::usDollar : Currency::euro);
     updateBitcoinPrice();
@@ -181,7 +188,7 @@ void handleBitcoin()
     switchAppMode(AppMode::blockHeight);
   }
 
-  if (touchInput.getLeftPressedFor() >= 2000 && timeSincePriceUpdate >= MIN_PRICE_UPDATE_DELAY)
+  if (touchInput.getLeftPressedFor() >= LONG_PRESS_DURATION && timeSincePriceUpdate >= MIN_PRICE_UPDATE_DELAY)
   {
     updateBitcoinPrice();
     timeSincePriceUpdate = 0;
@@ -195,7 +202,7 @@ void handleBlockHeight()
     switchAppMode(AppMode::bitcoin);
   }
 
-  if (touchInput.getLeftPressedFor() >= 2000 && timeSinceBlockHeightUpdate >= MIN_BLOCK_HEIGHT_UPDATE_DELAY)
+  if (touchInput.getLeftPressedFor() >= LONG_PRESS_DURATION && timeSinceBlockHeightUpdate >= MIN_BLOCK_HEIGHT_UPDATE_DELAY)
   {
     updateBlockHeight();
     timeSinceBlockHeightUpdate = 0;
