@@ -13,7 +13,7 @@ void setup()
     Serial.println("oled.begin() failed!");
   }
 
-  oled.setContrast(oledBrightness);
+  oled.setContrast(brightnessLevel[brightnessLevelIndex]);
 
   if (not Wire.begin())
   {

@@ -28,7 +28,6 @@ const uint8_t PIN_SCK = SCK;
 const uint8_t PIN_RESET = 26;
 
 U8G2_SSD1309_128X64_NONAME0_F_4W_SW_SPI oled(U8G2_R0, PIN_SCK, PIN_MOSI, PIN_CS, PIN_MISO_DC, PIN_RESET);
-uint8_t oledBrightness = 255;
 bool isOledMirrored = false;
 const uint16_t OLED_UPDATE_INTERVAL = 25; // ms
 elapsedMillis timeSinceOledUpdate = OLED_UPDATE_INTERVAL;
@@ -48,9 +47,8 @@ const int32_t displayIndicatorBitcoinUpdate_true = 1;
 const int32_t displayIndicatorBatteryLow_true = 2;
 int32_t displayIndicator = displayIndicator_false;
 
-const uint8_t minBrightness = 0;
-const uint8_t maxBrightness = 255;
-const uint8_t brightnessStep = 64;
+const std::array<const uint8_t, 9> brightnessLevel = { 0, 31, 63, 95, 127, 159, 191, 223, 255 };
+std::size_t brightnessLevelIndex = 4;
 
 bool isBrightnessAdjustmentActive = false;
 bool isOledOn = true;
@@ -60,16 +58,20 @@ struct HalvoeFont
 {
   public:
     const uint8_t* m_font = nullptr;
+    uint8_t m_yOffset = 0;
     bool m_drawDoubleSize = false;
 };
 
-std::array<HalvoeFont, 7> fontArray = { HalvoeFont{ u8g2_font_chargen_92_me, true },
-                                        HalvoeFont{ u8g2_font_chargen_92_me, false },
-                                        HalvoeFont{ u8g2_font_freedoomr25_tn, false },
-                                        HalvoeFont{ u8g2_font_maniac_tn, false },
-                                        HalvoeFont{ u8g2_font_bubble_tn, false },
-                                        HalvoeFont{ u8g2_font_osb26_tn, false },
-                                        HalvoeFont{ u8g2_font_mystery_quest_32_tn, false } };
+const std::array<const HalvoeFont, 10> fontArray = { HalvoeFont{ u8g2_font_chargen_92_me, 19, true },
+                                                     HalvoeFont{ u8g2_font_courR24_tn, 24, false},
+                                                     HalvoeFont{ u8g2_font_freedoomr25_tn, 21, false },
+                                                     HalvoeFont{ u8g2_font_spleen16x32_mn, 24, false },
+                                                     HalvoeFont{ u8g2_font_maniac_tn, 23, false },
+                                                     HalvoeFont{ u8g2_font_bubble_tn, 26, false },
+                                                     HalvoeFont{ u8g2_font_lubBI24_tn, 21, false },
+                                                     HalvoeFont{ u8g2_font_osb29_tn, 21, false },
+                                                     HalvoeFont{ u8g2_font_mystery_quest_48_tn, 18, false},
+                                                     HalvoeFont{ u8g2_font_commodore64_tr, 24, true } };
 std::size_t fontIndex = 0;
 
 void incrementFontIndex()
@@ -95,27 +97,19 @@ void incrementBrightness()
     turnOledOn();
     isOledOn = true;
     isOledAutoOnOff = false;
-
     return;
   }
 
-  int16_t newBrightness = oledBrightness + brightnessStep;
-
-  if (newBrightness < maxBrightness)
+  if (brightnessLevelIndex < brightnessLevel.size() - 1)
   {
-    oledBrightness = newBrightness;
+    ++brightnessLevelIndex;
+    oled.setContrast(brightnessLevel[brightnessLevelIndex]);
   }
-  else
-  {
-    oledBrightness = maxBrightness;
-  }
-  
-  oled.setContrast(oledBrightness);
 }
 
 void decrementBrightness()
 {
-  if (oledBrightness == minBrightness)
+  if (brightnessLevelIndex == 0)
   {
     turnOledOff();
 
@@ -131,18 +125,11 @@ void decrementBrightness()
     return;
   }
 
-  int16_t newBrightness = oledBrightness - brightnessStep;
-
-  if (newBrightness > minBrightness)
+  if (brightnessLevelIndex > 0)
   {
-    oledBrightness = newBrightness;
+    --brightnessLevelIndex;
+    oled.setContrast(brightnessLevel[brightnessLevelIndex]);
   }
-  else
-  {
-    oledBrightness = minBrightness;
-  }
-
-  oled.setContrast(oledBrightness);
 }
 
 void incrementCredentialsSelectionIndex(size_t in_credentialListSize)
@@ -175,17 +162,26 @@ void updateBrightnessAdjustmentIndicator()
 {
   if (isBrightnessAdjustmentActive)
   {
-    if (oledBrightness == maxBrightness)
+    if (brightnessLevelIndex == brightnessLevel.size() - 1)
     {
       oled.drawBox(0, 0, 5, 5);
+      oled.drawBox(0, oled.getDisplayHeight() - 6, 5, 5);
+      oled.drawBox(oled.getDisplayWidth() - 6, 0, 5, 5);
+      oled.drawBox(oled.getDisplayWidth() - 6, oled.getDisplayHeight() - 6, 5, 5);
     }
-    else if (oledBrightness == minBrightness)
+    else if (brightnessLevelIndex == 0)
     {
       oled.drawFrame(0, 0, 5, 5);
+      oled.drawFrame(0, oled.getDisplayHeight() - 6, 5, 5);
+      oled.drawFrame(oled.getDisplayWidth() - 6, 0, 5, 5);
+      oled.drawFrame(oled.getDisplayWidth() - 6, oled.getDisplayHeight() - 6, 5, 5);
     }
     else
     {
       oled.drawTriangle(0, 0, 5, 0, 0, 5);
+      oled.drawTriangle(0, oled.getDisplayHeight() - 6, 5, oled.getDisplayHeight() - 1, 0, oled.getDisplayHeight() - 1);
+      oled.drawTriangle(oled.getDisplayWidth() - 1, 0, oled.getDisplayWidth() - 6, 0, oled.getDisplayWidth() - 1, 5);
+      oled.drawTriangle(oled.getDisplayWidth() - 1, oled.getDisplayHeight() - 6, oled.getDisplayWidth() - 6, oled.getDisplayHeight() - 1, oled.getDisplayWidth() - 1, oled.getDisplayHeight() - 1);
     }
   }
 }
@@ -206,18 +202,15 @@ void drawStringXCenter(uint16_t in_y, const char* in_string)
 void drawStringCenter(const char* in_string)
 {
   const uint16_t stringWidth = oled.getStrWidth(in_string);
-  oled.setFontPosCenter();
 
   if (fontArray[fontIndex].m_drawDoubleSize)
   {
-    oled.drawStrX2((oled.getDisplayWidth() - (stringWidth * 2)) / 2, oled.getDisplayHeight() / 2, in_string);
+    oled.drawStrX2((oled.getDisplayWidth() - (stringWidth * 2)) / 2, oled.getDisplayHeight() - fontArray[fontIndex].m_yOffset, in_string);
   }
   else
   {
-    oled.drawStr((oled.getDisplayWidth() - stringWidth) / 2, oled.getDisplayHeight() / 2, in_string);
+    oled.drawStr((oled.getDisplayWidth() - stringWidth) / 2, oled.getDisplayHeight() - fontArray[fontIndex].m_yOffset, in_string);
   }
-
-  oled.setFontPosBaseline();
 }
 
 void updateScreenConfig(const String& in_batteryVoltage)
