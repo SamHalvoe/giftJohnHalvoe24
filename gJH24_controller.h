@@ -103,13 +103,13 @@ void handleLoadWiFiCredentials()
     {
       incrementCredentialsSelectionIndex(currentCredentialsListPtr->size());
     }
-    else if (touchInput.getMiddlePressedFor() >= LONG_PRESS_DURATION)
+    else if (touchInput.getMiddlePressedFor(LONG_PRESS_DURATION))
     {
       connectToWifi(currentCredentialsListPtr->at(credentialsSelectionIndex));
       connectionAttemptCount = 0;
       switchAppMode(AppMode::connectToWiFi);
     }
-    else if (touchInput.getRightPressedFor() >= LONG_PRESS_DURATION)
+    else if (touchInput.getRightPressedFor(LONG_PRESS_DURATION))
     {
       switchAppMode(AppMode::config);
     }
@@ -176,7 +176,7 @@ void handleBitcoin()
     switchAppMode(AppMode::clock);
   }
 
-  if (touchInput.getRightPressedFor() >= LONG_PRESS_DURATION && timeSincePriceUpdate > MIN_PRICE_UPDATE_DELAY)
+  if (touchInput.getRightPressedFor(LONG_PRESS_DURATION) && timeSincePriceUpdate > MIN_PRICE_UPDATE_DELAY)
   {
     currentCurrency = (currentCurrency == Currency::euro ? Currency::usDollar : Currency::euro);
     updateBitcoinPrice();
@@ -188,7 +188,7 @@ void handleBitcoin()
     switchAppMode(AppMode::blockHeight);
   }
 
-  if (touchInput.getLeftPressedFor() >= LONG_PRESS_DURATION && timeSincePriceUpdate >= MIN_PRICE_UPDATE_DELAY)
+  if (touchInput.getLeftPressedFor(LONG_PRESS_DURATION) && timeSincePriceUpdate >= MIN_PRICE_UPDATE_DELAY)
   {
     updateBitcoinPrice();
     timeSincePriceUpdate = 0;
@@ -202,7 +202,7 @@ void handleBlockHeight()
     switchAppMode(AppMode::bitcoin);
   }
 
-  if (touchInput.getLeftPressedFor() >= LONG_PRESS_DURATION && timeSinceBlockHeightUpdate >= MIN_BLOCK_HEIGHT_UPDATE_DELAY)
+  if (touchInput.getLeftPressedFor(LONG_PRESS_DURATION) && timeSinceBlockHeightUpdate >= MIN_BLOCK_HEIGHT_UPDATE_DELAY)
   {
     updateBlockHeight();
     timeSinceBlockHeightUpdate = 0;
@@ -248,7 +248,7 @@ int32_t getCurrentModeInteger(AppMode in_appMode)
 
 void handleBrightnessAdjustment()
 {
-  if (isOledOn && not isOledAutoOnOff && touchInput.isMiddleTapped())
+  if (isOledOn && not isOledAutoOnOff && touchInput.getMiddlePressedFor(LONG_PRESS_DURATION))
   {
     isBrightnessAdjustmentActive = not isBrightnessAdjustmentActive;
   }

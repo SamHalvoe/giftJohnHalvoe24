@@ -21,7 +21,9 @@ class TouchInput
     elapsedMillis m_leftPadPressedFor;
     elapsedMillis m_middlePadPressedFor;
     elapsedMillis m_rightPadPressedFor;
-    const unsigned long m_maxPressedTimeForTap = 750; // ms
+    bool m_wasLeftPressedFor = false;
+    bool m_wasMiddlePressedFor = false;
+    bool m_wasRightPressedFor = false;
 
   private:
     void updateLeft()
@@ -35,13 +37,18 @@ class TouchInput
 
         m_leftPadState = TouchState::isPressed;
       }
-      else if (m_leftPadState == TouchState::isPressed && m_leftPadPressedFor <= m_maxPressedTimeForTap)
+      else if (m_leftPadState == TouchState::isPressed && not m_wasLeftPressedFor)
       {
         m_leftPadState = TouchState::isTapped;
       }
       else
       {
         m_leftPadState = TouchState::isReleased;
+
+        if (m_wasLeftPressedFor)
+        {
+          m_wasLeftPressedFor = false;
+        }
       }
     }
 
@@ -56,13 +63,18 @@ class TouchInput
 
         m_middlePadState = TouchState::isPressed;
       }
-      else if (m_middlePadState == TouchState::isPressed && m_middlePadPressedFor <= m_maxPressedTimeForTap)
+      else if (m_middlePadState == TouchState::isPressed && not m_wasMiddlePressedFor)
       {
         m_middlePadState = TouchState::isTapped;
       }
       else
       {
         m_middlePadState = TouchState::isReleased;
+
+        if (m_wasMiddlePressedFor)
+        {
+          m_wasMiddlePressedFor = false;
+        }
       }
     }
 
@@ -77,13 +89,18 @@ class TouchInput
 
         m_rightPadState = TouchState::isPressed;
       }
-      else if (m_rightPadState == TouchState::isPressed && m_rightPadPressedFor <= m_maxPressedTimeForTap)
+      else if (m_rightPadState == TouchState::isPressed && not m_wasRightPressedFor)
       {
         m_rightPadState = TouchState::isTapped;
       }
       else
       {
         m_rightPadState = TouchState::isReleased;
+
+        if (m_wasRightPressedFor)
+        {
+          m_wasRightPressedFor = false;
+        }
       }
     }
 
@@ -120,34 +137,40 @@ class TouchInput
       return m_rightPadState == TouchState::isTapped;
     }
 
-    unsigned long getLeftPressedFor() const
+    bool getLeftPressedFor(unsigned long in_duration)
     {
-      if (m_leftPadState == TouchState::isPressed)
+      if (m_leftPadState == TouchState::isPressed && m_leftPadPressedFor >= in_duration)
       {
-        return m_leftPadPressedFor;
+        m_wasLeftPressedFor = true;
+        m_leftPadPressedFor = 0;
+        return true;
       }
 
-      return 0;
+      return false;
     }
 
-    unsigned long getMiddlePressedFor() const
+    bool getMiddlePressedFor(unsigned long in_duration)
     {
-      if (m_middlePadState == TouchState::isPressed)
+      if (m_middlePadState == TouchState::isPressed && m_middlePadPressedFor >= in_duration)
       {
-        return m_middlePadPressedFor;
+        m_wasMiddlePressedFor = true;
+        m_middlePadPressedFor = 0;
+        return true;
       }
 
-      return 0;
+      return false;
     }
 
-    unsigned long getRightPressedFor() const
+    bool getRightPressedFor(unsigned long in_duration)
     {
-      if (m_rightPadState == TouchState::isPressed)
+      if (m_rightPadState == TouchState::isPressed && m_rightPadPressedFor >= in_duration)
       {
-        return m_rightPadPressedFor;
+        m_wasRightPressedFor = true;
+        m_rightPadPressedFor = 0;
+        return true;
       }
 
-      return 0;
+      return false;
     }
 };
 
