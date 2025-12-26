@@ -3,7 +3,6 @@
 #include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
 #include <elapsedMillis.h>
-#include <ctime>
 
 #include "arduino_secrets.h"
 #include "gJH24_WiFi.h"
@@ -11,7 +10,7 @@
 
 const char* infoDomain = "mempool.space";
 const char* infoPathPrice = "/api/v1/prices";
-const char* infoPathBlockHeight = "/api/blocks/tip/height";
+const char* infoPathBlockHeight = "/api/v1/mining/blocks/timestamp";
 
 String bitcoinPriceTimestamp = "PTsUnset";
 String bitcoinPrice = "PriUnset";
@@ -95,8 +94,8 @@ void updateBitcoinPrice()
   JsonDocument jsonDocument;
   deserializeJson(jsonDocument, payload);
   
-  time_t priceTimestap = jsonDocument["time"].as<time_t>() + 3600; // + 3600 seconds => 1 hour offset from UTC (to Berlin time)
-  bitcoinPriceTimestamp = timeStructToString(std::gmtime(&priceTimestap));
+  time_t priceTimestap = jsonDocument["time"].as<time_t>() + GMT_OFFSET_SECONDS; // + GMT_OFFSET_SECONDS => 1 hour offset from UTC (to Berlin time)
+  bitcoinPriceTimestamp = timeStructToString(gmtime(&priceTimestap));
 
   switch (currentCurrency)
   {
@@ -134,6 +133,8 @@ void updateBlockHeight()
   getRequest.concat("https://");
   getRequest.concat(infoDomain);
   getRequest.concat(infoPathBlockHeight);
+  getRequest.concat("/");
+  getRequest.concat(time(nullptr));
   getRequest.concat(" HTTP/1.0");
 
   client.println(getRequest);
@@ -166,7 +167,10 @@ void updateBlockHeight()
 
   client.stop();
   
-  blockHeightTimestamp = timeString;
-  blockHeight = payload;
-  blockHeight.trim();
+  JsonDocument jsonDocument;
+  deserializeJson(jsonDocument, payload);
+
+  String heightTimestap = jsonDocument["timestamp"].as<String>();
+  blockHeightTimestamp = String(heightTimestap.substring(11, 13).toInt() + 1) + heightTimestap.substring(13, 16);
+  blockHeight = jsonDocument["height"].as<String>();
 }
