@@ -18,7 +18,7 @@ CredentialsListPtr currentCredentialsListPtr;
 const uint16_t QRCODE_READING_INTERVAL = 500; // ms
 elapsedMillis timeSinceQRCodeReading;
 
-const uint16_t TIME_UPDATE_INTERVAL = 300; // ms
+const uint16_t TIME_UPDATE_INTERVAL = 500; // ms
 elapsedMillis timeSinceTimeUpdate = TIME_UPDATE_INTERVAL;
 
 const uint16_t MIN_PRICE_UPDATE_DELAY = 10; // s
@@ -28,9 +28,6 @@ elapsedSeconds timeSincePriceUpdate;
 const uint16_t MIN_BLOCK_HEIGHT_UPDATE_DELAY = 10; // s
 const uint16_t BLOCK_HEIGHT_UPDATE_INTERVAL = 300; // s
 elapsedSeconds timeSinceBlockHeightUpdate;
-
-const uint16_t MIN_BRIGHTNESS_ADJUSTMENT_INTERVAL = 200; // ms
-elapsedMillis timeSinceBrightnessAdjustment;
 
 const uint16_t LONG_PRESS_DURATION = 1000; // ms
 
@@ -45,6 +42,20 @@ const uint16_t LONG_PRESS_DURATION = 1000; // ms
 
   return credentialsListPtr;
 }*/
+
+void doUpdateBitcoinPrice()
+{
+  updateBitcoinPrice();
+  displayIndicatorBitcoin = displayIndicatorBitcoinUpdate_true;
+  timeSincePriceUpdate = 0;
+}
+
+void doUpdateBlockHeight()
+{
+  updateBlockHeight();
+  displayIndicatorBlockHeight = displayIndicatorBitcoinUpdate_true;
+  timeSinceBlockHeightUpdate = 0;
+}
 
 void switchAppMode(AppMode in_newMode)
 {
@@ -179,8 +190,7 @@ void handleBitcoin()
   if (touchInput.getRightPressedFor(LONG_PRESS_DURATION) && timeSincePriceUpdate > MIN_PRICE_UPDATE_DELAY)
   {
     currentCurrency = (currentCurrency == Currency::euro ? Currency::usDollar : Currency::euro);
-    updateBitcoinPrice();
-    timeSincePriceUpdate = 0;
+    doUpdateBitcoinPrice();
   }
 
   if (touchInput.isLeftTapped())
@@ -190,8 +200,7 @@ void handleBitcoin()
 
   if (touchInput.getLeftPressedFor(LONG_PRESS_DURATION) && timeSincePriceUpdate >= MIN_PRICE_UPDATE_DELAY)
   {
-    updateBitcoinPrice();
-    timeSincePriceUpdate = 0;
+    doUpdateBitcoinPrice();
   }
 }
 
@@ -204,8 +213,7 @@ void handleBlockHeight()
 
   if (touchInput.getLeftPressedFor(LONG_PRESS_DURATION) && timeSinceBlockHeightUpdate >= MIN_BLOCK_HEIGHT_UPDATE_DELAY)
   {
-    updateBlockHeight();
-    timeSinceBlockHeightUpdate = 0;
+    doUpdateBlockHeight();
   }
 }
 
@@ -237,10 +245,11 @@ int32_t getCurrentModeInteger(AppMode in_appMode)
 {
   switch (in_appMode)
   {
+    case AppMode::config:        return (getBatteryVoltage() <= LOW_BATTERY_VOLTAGE ? 0 : 1);
     case AppMode::connectToWiFi: return connectionAttemptCount;
-    case AppMode::clock:         return displayIndicator;
-    case AppMode::bitcoin:       return displayIndicator;
-    case AppMode::blockHeight:   return displayIndicator;
+    case AppMode::clock:         return displayIndicatorClock;
+    case AppMode::bitcoin:       return displayIndicatorBitcoin;
+    case AppMode::blockHeight:   return displayIndicatorBlockHeight;
   }
 
   return -1;
@@ -324,52 +333,73 @@ void handleApp(AppMode in_appMode)
   {
     updateTime();
     getLocalTimeString();
-    
     timeSinceTimeUpdate = 0;
   }
 
   if (timeSincePriceUpdate >= PRICE_UPDATE_INTERVAL)
   {
-    updateBitcoinPrice();
+    doUpdateBitcoinPrice();
 
-    if (isOledAutoOnOff)
+    if (currentAppMode == AppMode::bitcoin && isOledAutoOnOff)
     {
       turnOledOn();
     }
-    else
-    {
-      displayIndicator = displayIndicatorBitcoinUpdate_true;
-    }
-
-    timeSincePriceUpdate = 0;
   }
-  else if (timeSincePriceUpdate > 10)
+  else if (currentAppMode == AppMode::bitcoin && timeSincePriceUpdate > 10)
   {
     if (isOledAutoOnOff)
     {
       turnOledOff();
     }
 
-    displayIndicator = displayIndicator_false;
+    displayIndicatorBitcoin = displayIndicator_false;
   }
 
   if (timeSinceBlockHeightUpdate >= BLOCK_HEIGHT_UPDATE_INTERVAL)
   {
-    updateBlockHeight();
-    timeSinceBlockHeightUpdate = 0;
+    doUpdateBlockHeight();
+
+    if (currentAppMode == AppMode::blockHeight && isOledAutoOnOff)
+    {
+      turnOledOn();
+    }
+  }
+  else if (currentAppMode == AppMode::blockHeight && timeSinceBlockHeightUpdate > 10)
+  {
+    if (isOledAutoOnOff)
+    {
+      turnOledOff();
+    }
+
+    displayIndicatorBlockHeight = displayIndicator_false;
   }
 
-  if (getBatteryVoltage() <= 3.70f)
+  if (getBatteryVoltage() <= LOW_BATTERY_VOLTAGE)
   {
     if (not isOledOn)
     {
       turnOledOn();
     }
 
-    displayIndicator = displayIndicatorBatteryLow_true;
+    displayIndicatorClock = displayIndicatorBatteryLow_true;
+    displayIndicatorBitcoin = displayIndicatorBatteryLow_true;
+    displayIndicatorBlockHeight = displayIndicatorBatteryLow_true;
   }
-  else if (displayIndicator == displayIndicatorBatteryLow_true)
+  else 
   {
-    displayIndicator = displayIndicator_false;
+    if (displayIndicatorClock == displayIndicatorBatteryLow_true)
+    {
+      displayIndicatorClock = displayIndicator_false;
+    }
+
+    if (displayIndicatorBitcoin == displayIndicatorBatteryLow_true)
+    {
+      displayIndicatorBitcoin = displayIndicator_false;
+    }
+
+    if (displayIndicatorBlockHeight == displayIndicatorBatteryLow_true)
+    {
+      displayIndicatorBlockHeight = displayIndicator_false;
+    }
   }
 }

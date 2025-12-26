@@ -1,6 +1,7 @@
-#pragma once
+﻿#pragma once
 
 const uint8_t VBAT_PIN = A13;
+const float LOW_BATTERY_VOLTAGE = 3.75f;
 
 float getBatteryVoltage()
 {

@@ -1,11 +1,7 @@
-﻿/*
-
-for fonts
+﻿/* for fonts
 - u8g2_font_streamline_interface_essential_other_t
 - u8g2_font_streamline_phone_t
-see https://streamlinehq.com
-
-*/
+see https://streamlinehq.com */
 
 #pragma once
 
@@ -32,9 +28,9 @@ bool isOledMirrored = false;
 const uint16_t OLED_UPDATE_INTERVAL = 25; // ms
 elapsedMillis timeSinceOledUpdate = OLED_UPDATE_INTERVAL;
 
+constexpr const uint16_t iconBatteryLow = 57616 + 4;
 constexpr const uint16_t iconQRCode = 48 + 6;
 constexpr const uint16_t iconFloppy = 48 + 3;
-constexpr const uint16_t iconBatteryLow = 48 + 1;
 constexpr const uint16_t iconBlockHeight = 48 + 15;
 constexpr const uint16_t yOffsetIcon = 32;
 
@@ -45,7 +41,9 @@ const size_t credentialsPageSize = 3;
 const int32_t displayIndicator_false = 0;
 const int32_t displayIndicatorBitcoinUpdate_true = 1;
 const int32_t displayIndicatorBatteryLow_true = 2;
-int32_t displayIndicator = displayIndicator_false;
+int32_t displayIndicatorClock = displayIndicator_false;
+int32_t displayIndicatorBitcoin = displayIndicator_false;
+int32_t displayIndicatorBlockHeight = displayIndicator_false;
 
 const std::array<const uint8_t, 9> brightnessLevel = { 0, 31, 63, 95, 127, 159, 191, 223, 255 };
 std::size_t brightnessLevelIndex = 4;
@@ -213,7 +211,7 @@ void drawStringCenter(const char* in_string)
   }
 }
 
-void updateScreenConfig(const String& in_batteryVoltage)
+void updateScreenConfig(const String& in_batteryVoltage, int32_t in_batteryVoltageBoolean) // 0/false == low battery voltage
 {
   constexpr const uint16_t xLeftCenter = (64 - 21) / 2;
   constexpr const uint16_t xRightCenter = (196 - 21) / 2;
@@ -222,6 +220,12 @@ void updateScreenConfig(const String& in_batteryVoltage)
   oled.drawGlyph(xLeftCenter, yOffsetIcon, iconQRCode);
   oled.setFont(u8g2_font_streamline_interface_essential_other_t);
   oled.drawGlyph(xRightCenter, yOffsetIcon, iconFloppy);
+
+  if (in_batteryVoltageBoolean == 0)
+  {
+    oled.setFont(u8g2_font_waffle_t_all);
+    oled.drawGlyphX2((oled.getDisplayWidth() - 20) / 2, 16, iconBatteryLow);
+  }
 
   oled.setFont(u8g2_font_glasstown_nbp_tr);
   drawStringXCenter(32, in_batteryVoltage.c_str());
@@ -324,14 +328,13 @@ void updateIndicatorBatteryLow(int32_t in_integer)
 {
   if (in_integer == displayIndicatorBatteryLow_true)
   {
-    oled.setFont(u8g2_font_battery19_tn);
-    oled.drawGlyph(120, 64, iconBatteryLow);
+    oled.setFont(u8g2_font_waffle_t_all);
+    oled.drawGlyphX2((oled.getDisplayWidth() - 20) / 2, 12, iconBatteryLow);
   }
 }
 
-void updateScreenClock(const String& in_string, int32_t in_integer)
+void updateScreenClock(const String& in_string)
 {
-  updateIndicatorBatteryLow(in_integer);
   oled.setFont(fontArray[fontIndex].m_font);
   drawStringCenter(in_string.c_str());
 }
@@ -437,7 +440,6 @@ void updateIndicatorBitcoinUpdate(int32_t in_integer)
 
 void updateScreenBitcoin(const String& in_price, const String& in_priceTimestamp, int32_t in_integer)
 {
-  updateIndicatorBatteryLow(in_integer);
   updateIndicatorBitcoinUpdate(in_integer);
 
   static const uint8_t spaceWidth = 4;
@@ -465,7 +467,7 @@ void updateScreenBitcoin(const String& in_price, const String& in_priceTimestamp
 
 void updateScreenBlockHeight(const String& in_blockHeight, const String& in_blockHeightTimestamp, int32_t in_integer)
 {
-  updateIndicatorBatteryLow(in_integer);
+  updateIndicatorBitcoinUpdate(in_integer);
 
   static const uint8_t spaceWidth = 4;
   static const uint8_t xOffset = 10;
@@ -503,7 +505,7 @@ void updateOled(AppMode in_appMode, const String& in_string, const String& in_st
     switch (in_appMode)
     {
       case AppMode::config:
-        updateScreenConfig(in_string);
+        updateScreenConfig(in_string, in_integer);
       break;
 
       case AppMode::readWiFiQRCode:
@@ -523,18 +525,21 @@ void updateOled(AppMode in_appMode, const String& in_string, const String& in_st
       break;
 
       case AppMode::clock:
-        updateScreenClock(in_string, in_integer);
+        updateScreenClock(in_string);
         updateBrightnessAdjustmentIndicator();
+        updateIndicatorBatteryLow(in_integer);
       break;
 
       case AppMode::bitcoin:
         updateScreenBitcoin(in_string, in_string2, in_integer);
         updateBrightnessAdjustmentIndicator();
+        updateIndicatorBatteryLow(in_integer);
       break;
 
       case AppMode::blockHeight:
         updateScreenBlockHeight(in_string, in_string2, in_integer);
         updateBrightnessAdjustmentIndicator();
+        updateIndicatorBatteryLow(in_integer);
       break;
     }
 
