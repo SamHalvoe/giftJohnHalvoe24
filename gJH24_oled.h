@@ -61,8 +61,9 @@ struct HalvoeFont
     bool m_drawDoubleSize = false;
 };
 
-const std::array<const HalvoeFont, 10> fontArray = { HalvoeFont{ u8g2_font_chargen_92_me, 19, true },
-                                                     HalvoeFont{ u8g2_font_courR24_tn, 24, false},
+const std::array<const HalvoeFont, 26> fontArray = { HalvoeFont{ u8g2_font_chargen_92_me, 19, true },
+
+                                                     /*HalvoeFont{ u8g2_font_courR24_tn, 24, false},
                                                      HalvoeFont{ u8g2_font_freedoomr25_tn, 21, false },
                                                      HalvoeFont{ u8g2_font_spleen16x32_mn, 24, false },
                                                      HalvoeFont{ u8g2_font_maniac_tn, 23, false },
@@ -70,7 +71,34 @@ const std::array<const HalvoeFont, 10> fontArray = { HalvoeFont{ u8g2_font_charg
                                                      HalvoeFont{ u8g2_font_lubBI24_tn, 21, false },
                                                      HalvoeFont{ u8g2_font_osb29_tn, 21, false },
                                                      HalvoeFont{ u8g2_font_mystery_quest_48_tn, 18, false},
-                                                     HalvoeFont{ u8g2_font_commodore64_tr, 24, true } };
+                                                     HalvoeFont{ u8g2_font_commodore64_tr, 24, true },*/
+
+                                                     HalvoeFont{ u8g2_font_ncenR24_tn, 18, false },
+                                                     HalvoeFont{ u8g2_font_inb30_mn, 18, false },
+
+                                                     HalvoeFont{ u8g2_font_pieceofcake_mel_tn, 18, true },
+                                                     HalvoeFont{ u8g2_font_oldwizard_tn, 18, true },
+                                                     HalvoeFont{ u8g2_font_mademoiselle_mel_tn, 18, true },
+                                                     HalvoeFont{ u8g2_font_tenfatguys_tn, 18, true },
+                                                     HalvoeFont{ u8g2_font_DigitalDiscoThin_tn, 18, true },
+                                                     HalvoeFont{ u8g2_font_CursivePixel_tr, 18, true },
+                                                     HalvoeFont{ u8g2_font_DigitalDiscoThin_tn, 18, true },
+                                                     HalvoeFont{ u8g2_font_pxplusibmvga9_tn, 18, true },
+                                                     HalvoeFont{ u8g2_font_profont17_tn, 18, true },
+                                                     HalvoeFont{ u8g2_font_sticker_mel_tn, 18, true },
+                                                     HalvoeFont{ u8g2_font_michaelmouse_tu, 18, true },
+                                                     HalvoeFont{ u8g2_font_squirrel_tn, 18, true },
+                                                     HalvoeFont{ u8g2_font_fewture_tn, 18, true },
+                                                     HalvoeFont{ u8g2_font_bauhaus2015_tn, 18, true },
+                                                     HalvoeFont{ u8g2_font_adventurer_tr, 18, true },
+                                                     HalvoeFont{ u8g2_font_frikativ_tr, 18, true },
+                                                     HalvoeFont{ u8g2_font_eckpixel_tr, 18, true },
+                                                     HalvoeFont{ u8g2_font_cu12_hn, 18, true },
+                                                     HalvoeFont{ u8g2_font_secretaryhand_tn, 28, true },
+                                                     HalvoeFont{ u8g2_font_cupcakemetoyourleader_tn, 18, true },
+                                                     HalvoeFont{ u8g2_font_jinxedwizards_tr, 18, true },
+                                                     HalvoeFont{ u8g2_font_heavybottom_tr, 18, true },
+                                                     HalvoeFont{ u8g2_font_HelvetiPixelOutline_tr, 18, true } };
 std::size_t fontIndex = 0;
 
 void incrementFontIndex()
@@ -364,9 +392,23 @@ void updateIndicatorBatteryLow(int32_t in_integer)
 
 void updateScreenClock(const String& in_string)
 {
-  if (isFontSelectionActive) oled.drawRFrame(0, 0, 128, 64, 15);
   oled.setFont(fontArray[fontIndex].m_font);
   drawStringCenter(in_string.c_str());
+
+  if (isFontSelectionActive)
+  {
+    oled.drawRFrame(0, 0, 128, 64, 15);
+    oled.setFont(u8g2_font_baby_tr);
+
+    if (fontIndex + 1 < 10)
+    {
+      drawStringXCenter(56, ("0" + String(fontIndex + 1)).c_str());
+    }
+    else
+    {
+      drawStringXCenter(56, String(fontIndex + 1).c_str());
+    }
+  }
 }
 
 void drawBitcoinCharacter(u8g2_uint_t in_x, u8g2_uint_t in_y)
