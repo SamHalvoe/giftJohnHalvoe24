@@ -137,7 +137,7 @@ class TouchInput
       return m_rightPadState == TouchState::isTapped;
     }
 
-    bool getLeftPressedFor(unsigned long in_duration)
+    bool isLeftPressedFor(unsigned long in_duration)
     {
       if (m_leftPadState == TouchState::isPressed && m_leftPadPressedFor >= in_duration)
       {
@@ -149,7 +149,7 @@ class TouchInput
       return false;
     }
 
-    bool getMiddlePressedFor(unsigned long in_duration)
+    bool isMiddlePressedFor(unsigned long in_duration)
     {
       if (m_middlePadState == TouchState::isPressed && m_middlePadPressedFor >= in_duration)
       {
@@ -161,7 +161,7 @@ class TouchInput
       return false;
     }
 
-    bool getRightPressedFor(unsigned long in_duration)
+    bool isRightPressedFor(unsigned long in_duration)
     {
       if (m_rightPadState == TouchState::isPressed && m_rightPadPressedFor >= in_duration)
       {

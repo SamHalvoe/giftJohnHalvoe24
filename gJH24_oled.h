@@ -48,6 +48,7 @@ int32_t displayIndicatorBlockHeight = displayIndicator_false;
 const std::array<const uint8_t, 9> brightnessLevel = { 0, 31, 63, 95, 127, 159, 191, 223, 255 };
 std::size_t brightnessLevelIndex = 4;
 
+bool isFontSelectionActive = false;
 bool isBrightnessAdjustmentActive = false;
 bool isOledOn = true;
 bool isOledAutoOnOff = false;
@@ -76,6 +77,18 @@ void incrementFontIndex()
 {
   ++fontIndex;
   if (fontIndex == fontArray.size()) fontIndex = 0;
+}
+
+void decrementFontIndex()
+{
+  if (fontIndex == 0)
+  {
+    fontIndex = fontArray.size() - 1;
+  }
+  else
+  {
+    --fontIndex;
+  }
 }
 
 void turnOledOn()
@@ -321,7 +334,23 @@ void updateScreenConnectToWiFi(uint8_t in_attemptCount)
 void updateScreenConnectToWiFiFailed()
 {
   drawStringXCenter(32, "Connection to WiFi failed;");
-  drawStringXCenter(48, "Tap middle to continue;");
+  drawStringXCenter(48, "Tap middle to return;");
+}
+
+void updateScreenErrorWiFiCredentialsFailed(int32_t in_integer)
+{
+  drawStringXCenter(20, "Save WiFi credentials failed;");
+
+  if (in_integer == isMaxCredentialCountReached_true)
+  {
+    drawStringXCenter(36, "Max credential count reached!");
+    drawStringXCenter(52, "Tap middle to return;");
+  }
+  else
+  {
+    drawStringXCenter(36, "Unknown error!");
+    drawStringXCenter(52, "Tap middle to return;");
+  }
 }
 
 void updateIndicatorBatteryLow(int32_t in_integer)
@@ -335,6 +364,7 @@ void updateIndicatorBatteryLow(int32_t in_integer)
 
 void updateScreenClock(const String& in_string)
 {
+  if (isFontSelectionActive) oled.drawRFrame(0, 0, 128, 64, 15);
   oled.setFont(fontArray[fontIndex].m_font);
   drawStringCenter(in_string.c_str());
 }
@@ -506,41 +536,45 @@ void updateOled(AppMode in_appMode, const String& in_string, const String& in_st
     {
       case AppMode::config:
         updateScreenConfig(in_string, in_integer);
-      break;
+        break;
 
       case AppMode::readWiFiQRCode:
         updateScreenReadWiFiQRCode();
-      break;
+        break;
 
       case AppMode::loadWiFiCredentials:
         updateScreenLoadWiFiCredentials(in_credentialListPtr);
-      break;
+        break;
 
-      case AppMode::connectToWiFi:
-        updateScreenConnectToWiFi(in_integer);
-      break;
+      case AppMode::errorWiFiCredentials:
+        updateScreenErrorWiFiCredentialsFailed(in_integer);
+        break;
 
       case AppMode::connectToWiFiFailed:
         updateScreenConnectToWiFiFailed();
-      break;
+        break;
+
+      case AppMode::connectToWiFi:
+        updateScreenConnectToWiFi(in_integer);
+        break;
 
       case AppMode::clock:
         updateScreenClock(in_string);
         updateBrightnessAdjustmentIndicator();
         updateIndicatorBatteryLow(in_integer);
-      break;
+        break;
 
       case AppMode::bitcoin:
         updateScreenBitcoin(in_string, in_string2, in_integer);
         updateBrightnessAdjustmentIndicator();
         updateIndicatorBatteryLow(in_integer);
-      break;
+        break;
 
       case AppMode::blockHeight:
         updateScreenBlockHeight(in_string, in_string2, in_integer);
         updateBrightnessAdjustmentIndicator();
         updateIndicatorBatteryLow(in_integer);
-      break;
+        break;
     }
 
     oled.sendBuffer();

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <SparkFun_External_EEPROM.h>
 
@@ -8,10 +8,17 @@ ExternalEEPROM eeprom;
 bool isEepromInitialised = false;
 const String EEPROM_IS_INITIALIZED_MARK = "EEPROM_IS_INITIALIZED_MARK";
 const uint32_t EEPROM_FIELD_WIDTH = 64;
+const uint32_t maxCredentialCount = 16;
 const uint32_t EEPROM_CREDENTIAL_WIDTH = 2 * EEPROM_FIELD_WIDTH;
 uint32_t EEPROM_CREDENTIAL_COUNT_ADDRESS = 0;
 uint32_t EEPROM_FIRST_CREDENTIAL_ADDRESS = 0;
+uint32_t EEPROM_FIRST_CONFIG_ADDRESS = EEPROM_FIRST_CREDENTIAL_ADDRESS + (EEPROM_CREDENTIAL_WIDTH * maxCredentialCount);
+const uint16_t CONFIG_IS_INITIALIZED_MARK = 0xC017;
+const uint16_t configVersion = 0x0001;
 uint32_t credentialCount = 0;
+const int32_t isMaxCredentialCountReached_false = 0;
+const int32_t isMaxCredentialCountReached_true = 1;
+int32_t isMaxCredentialCountReached = isMaxCredentialCountReached_false;
 
 String readMark()
 {
@@ -83,8 +90,7 @@ bool appendCredentials(const WiFiCredentials& in_credentials)
 
 WiFiCredentials readCredentials(uint32_t in_credentialIndex)
 {
-  if (not isEepromInitialised ||
-      in_credentialIndex >= credentialCount)
+  if (not isEepromInitialised || in_credentialIndex >= credentialCount)
   {
     return WiFiCredentials(); // with "m_isComplete = false" as mark for failure
   }
@@ -102,8 +108,7 @@ WiFiCredentials readCredentials(uint32_t in_credentialIndex)
 
 CredentialsListPtr readCredentialsList()
 {
-  if (not isEepromInitialised ||
-      credentialCount == 0)
+  if (not isEepromInitialised || credentialCount == 0)
   {
     return nullptr;
   }
@@ -133,5 +138,37 @@ bool saveCredentials(const WiFiCredentials& in_credentials)
     }
   }
 
-  return appendCredentials(in_credentials);
+  if (credentialCount < maxCredentialCount)
+  {
+    return appendCredentials(in_credentials);
+  }
+  else
+  {
+    isMaxCredentialCountReached = isMaxCredentialCountReached_true;
+  }
+
+  return false;
 }
+
+/*void loadConfig()
+{
+  uint32_t address = EEPROM_FIRST_CONFIG_ADDRESS;
+  eeprom.get(address, brightnessLevelIndex);
+  address = address + sizeof(brightnessLevelIndex);
+  eeprom.get(address, fontIndex);
+}
+
+void saveConfig()
+{
+  uint32_t address = EEPROM_FIRST_CONFIG_ADDRESS;
+  eeprom.put(address, brightnessLevelIndex);
+  address = address + sizeof(brightnessLevelIndex);
+  eeprom.put(address, fontIndex);
+}*/
+
+// Einstellungen speichern:
+// - Helligkeit
+// - Schriftart
+// - Währung
+// - letzte SSID ganz oben anzeigen => Index speichern
+

@@ -19,6 +19,7 @@ enum class AppMode : uint8_t
   config = 0,
   readWiFiQRCode,
   loadWiFiCredentials,
+  errorWiFiCredentials,
   connectToWiFi,
   connectToWiFiFailed,
   clock,

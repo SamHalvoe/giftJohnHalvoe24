@@ -31,6 +31,8 @@ elapsedSeconds timeSinceBlockHeightUpdate;
 
 const uint16_t LONG_PRESS_DURATION = 1000; // ms
 
+bool shouldSaveWiFiCredentials = false;
+
 /*CredentialsListPtr mockCredentialsListPtr()
 {
   CredentialsListPtr credentialsListPtr = std::make_shared<CredentialsList>();
@@ -92,6 +94,7 @@ void handleReadWiFiQRCode()
 
       if (currentCredentials.m_isComplete)
       {
+        shouldSaveWiFiCredentials = true;
         connectToWifi(currentCredentials);
         connectionAttemptCount = 0;
         switchAppMode(AppMode::connectToWiFi);
@@ -114,18 +117,27 @@ void handleLoadWiFiCredentials()
     {
       incrementCredentialsSelectionIndex(currentCredentialsListPtr->size());
     }
-    else if (touchInput.getMiddlePressedFor(LONG_PRESS_DURATION))
+    else if (touchInput.isMiddlePressedFor(LONG_PRESS_DURATION))
     {
+      shouldSaveWiFiCredentials = false;
       connectToWifi(currentCredentialsListPtr->at(credentialsSelectionIndex));
       connectionAttemptCount = 0;
       switchAppMode(AppMode::connectToWiFi);
     }
-    else if (touchInput.getRightPressedFor(LONG_PRESS_DURATION))
+    else if (touchInput.isRightPressedFor(LONG_PRESS_DURATION))
     {
       switchAppMode(AppMode::config);
     }
   }
   else if (touchInput.isRightTapped())
+  {
+    switchAppMode(AppMode::config);
+  }
+}
+
+void handleErrorWiFiCredentials()
+{
+  if (touchInput.isMiddleTapped())
   {
     switchAppMode(AppMode::config);
   }
@@ -137,7 +149,12 @@ void handleConnectToWiFi()
   {
     if (isConnectedToWifi())
     {
-      saveCredentials(currentCredentials);
+      if (shouldSaveWiFiCredentials && not saveCredentials(currentCredentials))
+      {
+        switchAppMode(AppMode::errorWiFiCredentials);
+        return;
+      }
+
       configurateTime();
       timeSincePriceUpdate = PRICE_UPDATE_INTERVAL;
       timeSinceBlockHeightUpdate = BLOCK_HEIGHT_UPDATE_INTERVAL;
@@ -151,7 +168,6 @@ void handleConnectToWiFi()
     if (connectionAttemptCount == 24)
     {
       disconnectFromWifi();
-
       switchAppMode(AppMode::connectToWiFiFailed);
     }
 
@@ -169,11 +185,6 @@ void handleConnectToWiFiFailed()
 
 void handleClock()
 {
-  if (touchInput.isRightTapped())
-  {
-    incrementFontIndex();
-  }
-
   if (touchInput.isLeftTapped())
   {
     switchAppMode(AppMode::bitcoin);
@@ -187,7 +198,7 @@ void handleBitcoin()
     switchAppMode(AppMode::clock);
   }
 
-  if (touchInput.getRightPressedFor(LONG_PRESS_DURATION) && timeSincePriceUpdate > MIN_PRICE_UPDATE_DELAY)
+  if (touchInput.isRightPressedFor(LONG_PRESS_DURATION) && timeSincePriceUpdate > MIN_PRICE_UPDATE_DELAY)
   {
     currentCurrency = (currentCurrency == Currency::euro ? Currency::usDollar : Currency::euro);
     doUpdateBitcoinPrice();
@@ -198,7 +209,7 @@ void handleBitcoin()
     switchAppMode(AppMode::blockHeight);
   }
 
-  if (touchInput.getLeftPressedFor(LONG_PRESS_DURATION) && timeSincePriceUpdate >= MIN_PRICE_UPDATE_DELAY)
+  if (touchInput.isLeftPressedFor(LONG_PRESS_DURATION) && timeSincePriceUpdate >= MIN_PRICE_UPDATE_DELAY)
   {
     doUpdateBitcoinPrice();
   }
@@ -211,7 +222,7 @@ void handleBlockHeight()
     switchAppMode(AppMode::bitcoin);
   }
 
-  if (touchInput.getLeftPressedFor(LONG_PRESS_DURATION) && timeSinceBlockHeightUpdate >= MIN_BLOCK_HEIGHT_UPDATE_DELAY)
+  if (touchInput.isLeftPressedFor(LONG_PRESS_DURATION) && timeSinceBlockHeightUpdate >= MIN_BLOCK_HEIGHT_UPDATE_DELAY)
   {
     doUpdateBlockHeight();
   }
@@ -245,19 +256,40 @@ int32_t getCurrentModeInteger(AppMode in_appMode)
 {
   switch (in_appMode)
   {
-    case AppMode::config:        return (getBatteryVoltage() <= LOW_BATTERY_VOLTAGE ? 0 : 1);
-    case AppMode::connectToWiFi: return connectionAttemptCount;
-    case AppMode::clock:         return displayIndicatorClock;
-    case AppMode::bitcoin:       return displayIndicatorBitcoin;
-    case AppMode::blockHeight:   return displayIndicatorBlockHeight;
+    case AppMode::config:               return (getBatteryVoltage() <= LOW_BATTERY_VOLTAGE ? 0 : 1);
+    case AppMode::errorWiFiCredentials: return isMaxCredentialCountReached;
+    case AppMode::connectToWiFi:        return connectionAttemptCount;
+    case AppMode::clock:                return displayIndicatorClock;
+    case AppMode::bitcoin:              return displayIndicatorBitcoin;
+    case AppMode::blockHeight:          return displayIndicatorBlockHeight;
   }
 
   return -1;
 }
 
+void handleFontSelection()
+{
+  if (touchInput.isRightPressedFor(LONG_PRESS_DURATION))
+  {
+    isFontSelectionActive = not isFontSelectionActive;
+  }
+
+  if (isFontSelectionActive)
+  {
+    if (touchInput.isRightTapped())
+    {
+      decrementFontIndex();
+    }
+    else if (touchInput.isLeftTapped())
+    {
+      incrementFontIndex();
+    }
+  }
+}
+
 void handleBrightnessAdjustment()
 {
-  if (isOledOn && not isOledAutoOnOff && touchInput.getMiddlePressedFor(LONG_PRESS_DURATION))
+  if (isOledOn && not isOledAutoOnOff && touchInput.isMiddlePressedFor(LONG_PRESS_DURATION))
   {
     isBrightnessAdjustmentActive = not isBrightnessAdjustmentActive;
   }
@@ -283,32 +315,44 @@ void handleApp(AppMode in_appMode)
   {
     case AppMode::config:
       handleConfig();
-    break;
+      break;
 
     case AppMode::readWiFiQRCode:
       handleReadWiFiQRCode();
-    break;
+      break;
 
     case AppMode::loadWiFiCredentials:
       handleLoadWiFiCredentials();
-    break;
+      break;
+
+    case AppMode::errorWiFiCredentials:
+      handleErrorWiFiCredentials();
+      break;
 
     case AppMode::connectToWiFi:
       handleConnectToWiFi();
-    break;
+      break;
 
     case AppMode::connectToWiFiFailed:
       handleConnectToWiFiFailed();
-    break;
+      break;
     
     case AppMode::clock:
-      handleBrightnessAdjustment();
-
+      if (not isFontSelectionActive)
+      {
+        handleBrightnessAdjustment();
+      }
+      
       if (not isBrightnessAdjustmentActive)
+      {
+        handleFontSelection();
+      }
+      
+      if (not isBrightnessAdjustmentActive && not isFontSelectionActive)
       {
         handleClock();
       }
-    break;
+      break;
 
     case AppMode::bitcoin:
       handleBrightnessAdjustment();
@@ -317,7 +361,7 @@ void handleApp(AppMode in_appMode)
       {
         handleBitcoin();
       }
-    break;
+      break;
 
     case AppMode::blockHeight:
       handleBrightnessAdjustment();
@@ -326,7 +370,7 @@ void handleApp(AppMode in_appMode)
       {
         handleBlockHeight();
       }
-    break;
+      break;
   }
 
   if (timeSinceTimeUpdate >= TIME_UPDATE_INTERVAL)
