@@ -19,19 +19,22 @@ const uint16_t QRCODE_READING_INTERVAL = 500; // ms
 elapsedMillis timeSinceQRCodeReading;
 
 const uint16_t TIME_UPDATE_INTERVAL = 500; // ms
-elapsedMillis timeSinceTimeUpdate = TIME_UPDATE_INTERVAL;
+elapsedMillis timeSinceTimeUpdate = TIME_UPDATE_INTERVAL; // "= TIME_UPDATE_INTERVAL" >> update time after startup
 
 const uint16_t MIN_PRICE_UPDATE_DELAY = 10; // s
-const uint16_t PRICE_UPDATE_INTERVAL = 600; // s
-elapsedSeconds timeSincePriceUpdate;
+const uint16_t PRICE_UPDATE_INTERVAL = 600; // s | 10 minutes
+elapsedSeconds timeSincePriceUpdate = PRICE_UPDATE_INTERVAL;
 
 const uint16_t MIN_BLOCK_HEIGHT_UPDATE_DELAY = 10; // s
-const uint16_t BLOCK_HEIGHT_UPDATE_INTERVAL = 300; // s
-elapsedSeconds timeSinceBlockHeightUpdate;
+const uint16_t BLOCK_HEIGHT_UPDATE_INTERVAL = 300; // s | 5 minutes
+elapsedSeconds timeSinceBlockHeightUpdate = BLOCK_HEIGHT_UPDATE_INTERVAL;
 
-const uint16_t LONG_PRESS_DURATION = 1000; // ms
+const uint16_t LONG_PRESS_DURATION = 1000; // ms | 1 second
 
 bool shouldSaveWiFiCredentials = false;
+
+const uint16_t CONFIG_SAVE_INTERVAL = 1200; // s | 20 minutes
+elapsedSeconds timeSinceConfigSave = CONFIG_SAVE_INTERVAL - 300; // "= CONFIG_SAVE_INTERVAL - 300" >> save config 5 minutes after wifi connection is made
 
 /*CredentialsListPtr mockCredentialsListPtr()
 {
@@ -73,7 +76,15 @@ void handleConfig()
   else if (touchInput.isLeftTapped())
   {
     currentCredentialsListPtr = readCredentialsList(); //mockCredentialsListPtr();
-    switchAppMode(AppMode::loadWiFiCredentials);
+    
+    if (indexOfLastSelectedCredentials != INVALID_INDEX && indexOfLastSelectedCredentials < currentCredentialsListPtr->size())
+    {
+      switchAppMode(AppMode::loadLastWiFiCredentials);
+    }
+    else
+    {
+      switchAppMode(AppMode::loadWiFiCredentials);
+    }
   }
 }
 
@@ -135,6 +146,22 @@ void handleLoadWiFiCredentials()
   }
 }
 
+void handleLoadLastWiFiCredentials()
+{
+  if (touchInput.isRightPressedFor(LONG_PRESS_DURATION))
+  {
+    switchAppMode(AppMode::loadWiFiCredentials);
+  }
+  else if (touchInput.isMiddlePressedFor(LONG_PRESS_DURATION))
+  {
+    shouldSaveWiFiCredentials = false;
+    credentialsSelectionIndex = indexOfLastSelectedCredentials;
+    connectToWifi(currentCredentialsListPtr->at(indexOfLastSelectedCredentials));
+    connectionAttemptCount = 0;
+    switchAppMode(AppMode::connectToWiFi);
+  }
+}
+
 void handleErrorWiFiCredentials()
 {
   if (touchInput.isMiddleTapped())
@@ -149,15 +176,25 @@ void handleConnectToWiFi()
   {
     if (isConnectedToWifi())
     {
-      if (shouldSaveWiFiCredentials && not saveCredentials(currentCredentials))
+      if (shouldSaveWiFiCredentials)
       {
-        switchAppMode(AppMode::errorWiFiCredentials);
-        return;
+        if (saveCredentials(currentCredentials))
+        {
+          // set indexOfLastSelectedCredentials to index of added credentials
+          indexOfLastSelectedCredentials = currentCredentialsListPtr->size();
+        }
+        else
+        {
+          switchAppMode(AppMode::errorWiFiCredentials);
+          return;
+        }
+      }
+      else
+      {
+        indexOfLastSelectedCredentials = credentialsSelectionIndex;
       }
 
       configurateTime();
-      timeSincePriceUpdate = PRICE_UPDATE_INTERVAL;
-      timeSinceBlockHeightUpdate = BLOCK_HEIGHT_UPDATE_INTERVAL;
       switchAppMode(AppMode::clock);
     }
     else
@@ -325,6 +362,10 @@ void handleApp(AppMode in_appMode)
       handleLoadWiFiCredentials();
       break;
 
+    case AppMode::loadLastWiFiCredentials:
+      handleLoadLastWiFiCredentials();
+      break;
+
     case AppMode::errorWiFiCredentials:
       handleErrorWiFiCredentials();
       break;
@@ -445,5 +486,26 @@ void handleApp(AppMode in_appMode)
     {
       displayIndicatorBlockHeight = displayIndicator_false;
     }
+  }
+
+  if (currentAppMode >= AppMode::clock)
+  {
+    if (timeSinceConfigSave >= CONFIG_SAVE_INTERVAL)
+    {
+      if (saveConfig())
+      {
+        Serial.println("Config saved.");
+      }
+      else
+      {
+        Serial.println("Error: saveConfig() failed!");
+      }
+
+      timeSinceConfigSave = 0;
+    }
+  }
+  else
+  {
+    timeSinceConfigSave = CONFIG_SAVE_INTERVAL - 300; // "= CONFIG_SAVE_INTERVAL - 300" >> save config 5 minutes after wifi connection is made
   }
 }

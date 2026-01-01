@@ -13,8 +13,6 @@ void setup()
     Serial.println("oled.begin() failed!");
   }
 
-  oled.setContrast(brightnessLevel[brightnessLevelIndex]);
-
   if (not Wire.begin())
   {
     Serial.println("Wire.begin() failed!");
@@ -24,6 +22,17 @@ void setup()
   {
     Serial.println("beginEeprom() failed!");
   }
+
+  if (loadConfig())
+  {
+    Serial.println("Config loaded.");
+  }
+  else
+  {
+    Serial.println("Error: loadConfig() failed!");
+  }
+
+  oled.setContrast(brightnessLevel[brightnessLevelIndex]);
 
   if (not touchInput.begin())
   {

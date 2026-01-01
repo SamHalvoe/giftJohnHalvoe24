@@ -24,7 +24,6 @@ const uint8_t PIN_SCK = SCK;
 const uint8_t PIN_RESET = 26;
 
 U8G2_SSD1309_128X64_NONAME0_F_4W_SW_SPI oled(U8G2_R0, PIN_SCK, PIN_MOSI, PIN_CS, PIN_MISO_DC, PIN_RESET);
-bool isOledMirrored = false;
 const uint16_t OLED_UPDATE_INTERVAL = 25; // ms
 elapsedMillis timeSinceOledUpdate = OLED_UPDATE_INTERVAL;
 
@@ -34,7 +33,6 @@ constexpr const uint16_t iconFloppy = 48 + 3;
 constexpr const uint16_t iconBlockHeight = 48 + 15;
 constexpr const uint16_t yOffsetIcon = 32;
 
-size_t credentialsSelectionIndex = 0;
 size_t credentialsPageIndex = 0;
 const size_t credentialsPageSize = 3;
 
@@ -46,7 +44,6 @@ int32_t displayIndicatorBitcoin = displayIndicator_false;
 int32_t displayIndicatorBlockHeight = displayIndicator_false;
 
 const std::array<const uint8_t, 9> brightnessLevel = { 0, 31, 63, 95, 127, 159, 191, 223, 255 };
-std::size_t brightnessLevelIndex = 4;
 
 bool isFontSelectionActive = false;
 bool isBrightnessAdjustmentActive = false;
@@ -97,7 +94,6 @@ const std::array<const HalvoeFont, 35> fontArray = { HalvoeFont{ u8g2_font_charg
                                                      HalvoeFont{ u8g2_font_jinxedwizards_tr, 20, true },
                                                      HalvoeFont{ u8g2_font_heavybottom_tr, 20, true },
                                                      HalvoeFont{ u8g2_font_HelvetiPixelOutline_tr, 20, true } };
-std::size_t fontIndex = 0;
 
 void incrementFontIndex()
 {
@@ -223,13 +219,6 @@ void updateBrightnessAdjustmentIndicator()
   }
 }
 
-void toggleMirrorOled()
-{
-  oled.setDisplayRotation(isOledMirrored ? U8G2_R0 : U8G2_MIRROR);
-
-  isOledMirrored = not isOledMirrored;
-}
-
 void drawStringXCenter(uint16_t in_y, const char* in_string)
 {
   const uint16_t stringWidth = oled.getStrWidth(in_string);
@@ -339,6 +328,24 @@ void updateScreenLoadWiFiCredentials(const CredentialsListPtr in_credentialListP
   else
   {
     drawScreenLoadWiFiCredentialsEmpty();
+  }
+}
+
+void updateScreenLoadLastWiFiCredentials(const CredentialsListPtr in_credentialListPtr)
+{
+  if (in_credentialListPtr && indexOfLastSelectedCredentials != INVALID_INDEX && indexOfLastSelectedCredentials < in_credentialListPtr->size())
+  {
+    drawStringXCenter(16, "Connect to following WiFi?");
+
+    const char* ssid = in_credentialListPtr->at(indexOfLastSelectedCredentials).m_ssid.c_str();
+    const auto stringWidth = oled.getStrWidth(ssid);
+    oled.drawBox(((oled.getDisplayWidth() - stringWidth) / 2) - 2, 18, stringWidth + 4, 11);
+    oled.setDrawColor(0);
+    drawStringXCenter(28, ssid);
+    oled.setDrawColor(1);
+
+    drawStringXCenter(40, "Hold middle to connect;");
+    drawStringXCenter(52, "Hold left to show all WiFis;");
   }
 }
 
@@ -584,6 +591,10 @@ void updateOled(AppMode in_appMode, const String& in_string, const String& in_st
 
       case AppMode::loadWiFiCredentials:
         updateScreenLoadWiFiCredentials(in_credentialListPtr);
+        break;
+
+      case AppMode::loadLastWiFiCredentials:
+        updateScreenLoadLastWiFiCredentials(in_credentialListPtr);
         break;
 
       case AppMode::errorWiFiCredentials:

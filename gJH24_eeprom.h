@@ -9,13 +9,13 @@ bool isEepromInitialised = false;
 const String EEPROM_IS_INITIALIZED_MARK = "EEPROM_IS_INITIALIZED_MARK";
 const uint32_t EEPROM_FIELD_WIDTH = 64;
 const uint32_t maxCredentialCount = 16;
-const uint32_t EEPROM_CREDENTIAL_WIDTH = 2 * EEPROM_FIELD_WIDTH;
-uint32_t EEPROM_CREDENTIAL_COUNT_ADDRESS = 0;
-uint32_t EEPROM_FIRST_CREDENTIAL_ADDRESS = 0;
-uint32_t EEPROM_FIRST_CONFIG_ADDRESS = EEPROM_FIRST_CREDENTIAL_ADDRESS + (EEPROM_CREDENTIAL_WIDTH * maxCredentialCount);
-const uint16_t CONFIG_IS_INITIALIZED_MARK = 0xC017;
-const uint16_t configVersion = 0x0001;
 uint32_t credentialCount = 0;
+const uint32_t EEPROM_CREDENTIAL_WIDTH = 2 * EEPROM_FIELD_WIDTH;
+uint32_t EEPROM_CREDENTIAL_COUNT_ADDRESS = EEPROM_IS_INITIALIZED_MARK.length() + 1;
+uint32_t EEPROM_FIRST_CREDENTIAL_ADDRESS = EEPROM_CREDENTIAL_COUNT_ADDRESS + sizeof(credentialCount);
+uint32_t EEPROM_FIRST_CONFIG_ADDRESS = EEPROM_FIRST_CREDENTIAL_ADDRESS + (EEPROM_CREDENTIAL_WIDTH * maxCredentialCount);
+const uint16_t CONFIG_START_UNIQUE_MARK = 0xC017;
+const uint16_t configVersion = 0x0001;
 const int32_t isMaxCredentialCountReached_false = 0;
 const int32_t isMaxCredentialCountReached_true = 1;
 int32_t isMaxCredentialCountReached = isMaxCredentialCountReached_false;
@@ -41,8 +41,6 @@ bool beginEeprom()
     return false;
   }
 
-  EEPROM_CREDENTIAL_COUNT_ADDRESS = EEPROM_IS_INITIALIZED_MARK.length() + 1;
-
   if (readMark() == EEPROM_IS_INITIALIZED_MARK)
   {
     eeprom.get(EEPROM_CREDENTIAL_COUNT_ADDRESS, credentialCount);
@@ -54,7 +52,6 @@ bool beginEeprom()
     eeprom.put(EEPROM_CREDENTIAL_COUNT_ADDRESS, credentialCount);
   }
 
-  EEPROM_FIRST_CREDENTIAL_ADDRESS = EEPROM_CREDENTIAL_COUNT_ADDRESS + sizeof(credentialCount);
   isEepromInitialised = true;
 
   return true;
@@ -150,25 +147,56 @@ bool saveCredentials(const WiFiCredentials& in_credentials)
   return false;
 }
 
-/*void loadConfig()
+bool loadConfig()
 {
   uint32_t address = EEPROM_FIRST_CONFIG_ADDRESS;
+
+  uint16_t mark = 0;
+  eeprom.get(address, mark);
+  if (mark != CONFIG_START_UNIQUE_MARK) return false;
+  address = address + sizeof(CONFIG_START_UNIQUE_MARK);
+
+  uint16_t version = 0;
+  eeprom.get(address, version);
+  address = address + sizeof(configVersion);
+  if (version != configVersion) return false;
+
+  // load current brightness setting
   eeprom.get(address, brightnessLevelIndex);
   address = address + sizeof(brightnessLevelIndex);
+  // load current selected font
   eeprom.get(address, fontIndex);
+  address = address + sizeof(fontIndex);
+  // load current selected currency
+  eeprom.get(address, currentCurrency);
+  address = address + sizeof(currentCurrency);
+  // load last selected SSID to put next time in the first position of the SSID list
+  eeprom.get(address, indexOfLastSelectedCredentials);
+  //address = address + sizeof();
+
+  return true;
 }
 
-void saveConfig()
+bool saveConfig()
 {
   uint32_t address = EEPROM_FIRST_CONFIG_ADDRESS;
-  eeprom.put(address, brightnessLevelIndex);
+  eeprom.putChanged(address, CONFIG_START_UNIQUE_MARK);
+  address = address + sizeof(CONFIG_START_UNIQUE_MARK);
+  eeprom.putChanged(address, configVersion);
+  address = address + sizeof(configVersion);
+
+  // save current brightness setting
+  eeprom.putChanged(address, brightnessLevelIndex);
   address = address + sizeof(brightnessLevelIndex);
-  eeprom.put(address, fontIndex);
-}*/
+  // save current selected font
+  eeprom.putChanged(address, fontIndex);
+  address = address + sizeof(fontIndex);
+  // save current selected currency
+  eeprom.putChanged(address, currentCurrency);
+  address = address + sizeof(currentCurrency);
+  // save last selected SSID to put next time in the first position of the SSID list
+  eeprom.putChanged(address, indexOfLastSelectedCredentials);
+  //address = address + sizeof();
 
-// Einstellungen speichern:
-// - Helligkeit
-// - Schriftart
-// - Währung
-// - letzte SSID ganz oben anzeigen => Index speichern
-
+  return true;
+}
