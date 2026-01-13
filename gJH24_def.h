@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <vector>
+#include <array>
 #include <memory>
 #include <limits>
 
@@ -21,6 +22,8 @@ std::size_t indexOfLastSelectedCredentials = INVALID_INDEX;
 std::size_t brightnessLevelIndex = 4;
 std::size_t fontIndex = 0;
 
+std::array<unsigned char, 1024> currentWidgetScreen;
+
 enum class AppMode : uint8_t
 {
   config = 0,
@@ -32,7 +35,8 @@ enum class AppMode : uint8_t
   connectToWiFiFailed,
   clock,
   bitcoin,
-  blockHeight
+  blockHeight,
+  widget
 };
 
 AppMode currentAppMode = AppMode::config;

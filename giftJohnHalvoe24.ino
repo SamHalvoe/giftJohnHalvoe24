@@ -38,6 +38,8 @@ void setup()
   {
     Serial.println("touchInput.begin() failed!");
   }
+
+  currentWidgetScreen.fill(0);
   
   Serial.println("setup finished");
 }
@@ -45,5 +47,5 @@ void setup()
 void loop()
 {
   handleApp(currentAppMode);
-  updateOled(currentAppMode, getCurrentModeString(currentAppMode), getCurrentModeString2(currentAppMode), getCurrentModeInteger(currentAppMode), currentCredentialsListPtr);
+  updateOled(currentAppMode, getCurrentModeString(currentAppMode), getCurrentModeString2(currentAppMode), getCurrentModeInteger(currentAppMode), currentCredentialsListPtr, currentWidgetScreen);
 }

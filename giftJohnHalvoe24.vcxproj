@@ -128,6 +128,7 @@
       <FileType>CppCode</FileType>
       <DeploymentContent>true</DeploymentContent>
     </ClCompile>
+    <ClInclude Include="gJH24_widget.h" />
     <ClInclude Include="__vm\.giftJohnHalvoe24.vsarduino.h" />
   </ItemGroup>
   <PropertyGroup>

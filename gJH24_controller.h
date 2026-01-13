@@ -7,6 +7,7 @@
 #include "gJH24_WiFi.h"
 #include "gJH24_Time.h"
 #include "gJH24_bitcoinInfo.h"
+#include "gJH24_widget.h"
 #include "gJH24_oled.h"
 #include "gJH24_touchInput.h"
 
@@ -263,6 +264,11 @@ void handleBlockHeight()
   {
     doUpdateBlockHeight();
   }
+
+  if (touchInput.isLeftTapped())
+  {
+    switchAppMode(AppMode::widget);
+  }
 }
 
 String getCurrentModeString(AppMode in_appMode)
@@ -344,6 +350,21 @@ void handleBrightnessAdjustment()
   }
 }
 
+void handleWidget()
+{
+  if (touchInput.isRightTapped())
+  {
+    switchAppMode(AppMode::blockHeight);
+  }
+
+  static elapsedMillis timeSinceUpdate = 5000;
+  if (timeSinceUpdate >= 5000)
+  {
+    getWidgetScreen();
+    timeSinceUpdate = 0;
+  }
+}
+
 void handleApp(AppMode in_appMode)
 {
   touchInput.update();
@@ -411,6 +432,10 @@ void handleApp(AppMode in_appMode)
       {
         handleBlockHeight();
       }
+      break;
+
+    case AppMode::widget:
+      handleWidget();
       break;
   }
 

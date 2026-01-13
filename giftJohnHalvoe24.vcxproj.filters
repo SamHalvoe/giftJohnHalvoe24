@@ -57,5 +57,8 @@
     <ClInclude Include="__vm\.giftJohnHalvoe24.vsarduino.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="gJH24_widget.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

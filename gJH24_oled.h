@@ -573,7 +573,12 @@ void updateScreenBlockHeight(const String& in_blockHeight, const String& in_bloc
   }
 }
 
-void updateOled(AppMode in_appMode, const String& in_string, const String& in_string2, int32_t in_integer, const CredentialsListPtr in_credentialListPtr)
+void updateWidget(const std::array<unsigned char, 1024>& in_widgetScreen)
+{
+  oled.drawBitmap(0, 0, 16, oled.getHeight(), in_widgetScreen.data());
+}
+
+void updateOled(AppMode in_appMode, const String& in_string, const String& in_string2, int32_t in_integer, const CredentialsListPtr in_credentialListPtr, const std::array<unsigned char, 1024>& in_widgetScreen)
 {
   if (timeSinceOledUpdate >= OLED_UPDATE_INTERVAL)
   {
@@ -625,6 +630,10 @@ void updateOled(AppMode in_appMode, const String& in_string, const String& in_st
         updateScreenBlockHeight(in_string, in_string2, in_integer);
         updateBrightnessAdjustmentIndicator();
         updateIndicatorBatteryLow(in_integer);
+        break;
+
+      case AppMode::widget:
+        updateWidget(in_widgetScreen);
         break;
     }
 
