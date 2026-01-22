@@ -1,55 +1,134 @@
 ﻿#pragma once
 
+#include <vector>
+
 #include <WiFiClientSecure.h>
+#include <ArduinoJson.h>
 
 #include "arduino_secrets.h"
 #include "gJH24_def.h"
 #include "gJH24_WiFi.h"
 
-const char* widgetDomain = "calibre.johanneskrug.de";
-const char* widgetPath = "/";
+const char* widgetDomain = "clock.johanneskrug.de";
+const char* widgetIdsPath = "/api/widgets/ids";
+const char* widgetPath = "/api/widgets/";
 
-void getWidgetScreen()
+//WiFiClientSecure widgetClient;
+//WiFiClient widgetClient;
+std::vector<String> widgetIds;
+
+void setupWidgetClient()
 {
+  //widgetClient.setInsecure();
+  //widgetClient.setCACert(CERTIFICATE_WIDGET);
+}
+
+void getWidgetIds()
+{
+  widgetIds.clear();
+
   if (not isConnectedToWifi())
   {
     Serial.println("Error: No WiFi!");
     return;
   }
 
-  WiFiClientSecure client;
-  client.setCACert(CERTIFICATE_WIDGET);
+  WiFiClient widgetClient;
 
-  if (not client.connect(widgetDomain, 443))
+  if (not widgetClient.connect(widgetDomain, 80))
+  //if (not widgetClient.connect(widgetDomain, 443))
   {
     Serial.println("Error: Could not connect to widgetDomain!");
     return;
   }
 
   String getRequest = "GET ";
-  getRequest.concat("https://");
+  getRequest.concat("http://");
+  //getRequest.concat("https://");
   getRequest.concat(widgetDomain);
-  getRequest.concat(widgetPath);
-  getRequest.concat(" HTTP/1.0");
+  getRequest.concat(widgetIdsPath);
+  getRequest.concat(" HTTP/1.1");
+  //Serial.println(getRequest);
+  
+  widgetClient.println(getRequest);
+  widgetClient.print("Host: ");
+  widgetClient.println(widgetDomain);
+  widgetClient.println("Connection: close");
+  widgetClient.println();
 
-  client.println(getRequest);
-  client.print("Host: ");
-  client.println(widgetDomain);
-  client.println("Connection: close");
-  client.println();
-
-  while (client.connected())
+  String responseHeader;
+  while (widgetClient.connected())
   {
-    String line = client.readStringUntil('\n');
+    String line = widgetClient.readStringUntil('\n');
+    if (line == "\r") break; // end of response header
+    responseHeader.concat(line);
+    responseHeader.concat('\n');
+  }
+  Serial.println(responseHeader);
+  Serial.println(widgetClient.available());
 
-    if (line == "\r") // end of response
-    {
-      break;
-    }
+  String payload(widgetClient.readString());
+  widgetClient.stop();
+  //Serial.println(payload);
+
+  JsonDocument jsonDocument;
+  deserializeJson(jsonDocument, payload);
+  JsonArray array = jsonDocument.as<JsonArray>();
+  
+  for (JsonVariant element : array)
+  {
+    widgetIds.emplace_back(element.as<String>());
   }
 
-  // get payload (pixel data)
+  Serial.println(widgetIds.size());
+}
+
+void getWidgetScreen(const String& in_id)
+{
   currentWidgetScreen.fill(0);
-  client.readBytes(currentWidgetScreen.data(), currentWidgetScreen.size());
-  client.stop();
+
+  if (not isConnectedToWifi())
+  {
+    Serial.println("Error: No WiFi!");
+    return;
+  }
+  
+  WiFiClient widgetClient;
+
+  if (not widgetClient.connect(widgetDomain, 80))
+  //if (not widgetClient.connect(widgetDomain, 443))
+  {
+    Serial.println("Error: Could not connect to widgetDomain!");
+    return;
+  }
+
+  String getRequest = "GET ";
+  getRequest.concat("http://");
+  //getRequest.concat("https://");
+  getRequest.concat(widgetDomain);
+  getRequest.concat(widgetPath);
+  getRequest.concat(in_id);
+  getRequest.concat(" HTTP/1.1");
+  Serial.println(getRequest);
+
+  widgetClient.println(getRequest);
+  widgetClient.print("Host: ");
+  widgetClient.println(widgetDomain);
+  widgetClient.println("Connection: close");
+  widgetClient.println();
+
+  String responseHeader;
+  while (widgetClient.connected())
+  {
+    String line = widgetClient.readStringUntil('\n');
+    if (line == "\r") break; // end of response header
+    responseHeader.concat(line);
+    responseHeader.concat('\n');
+  }
+  Serial.println(responseHeader);
+  Serial.println(widgetClient.available());
+
+  // get payload (pixel data)
+  widgetClient.readBytes(currentWidgetScreen.data(), currentWidgetScreen.size());
+  widgetClient.stop();
 }

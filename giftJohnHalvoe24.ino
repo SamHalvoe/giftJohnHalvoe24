@@ -40,6 +40,7 @@ void setup()
   }
 
   currentWidgetScreen.fill(0);
+  setupWidgetClient();
   
   Serial.println("setup finished");
 }

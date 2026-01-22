@@ -37,6 +37,9 @@ bool shouldSaveWiFiCredentials = false;
 const uint16_t CONFIG_SAVE_INTERVAL = 1200; // s | 20 minutes
 elapsedSeconds timeSinceConfigSave = CONFIG_SAVE_INTERVAL - 300; // "= CONFIG_SAVE_INTERVAL - 300" >> save config 5 minutes after wifi connection is made
 
+uint16_t widgetUpdateInterval = 15; // s
+elapsedSeconds timeSinceWidgetUpdate = widgetUpdateInterval;
+
 /*CredentialsListPtr mockCredentialsListPtr()
 {
   CredentialsListPtr credentialsListPtr = std::make_shared<CredentialsList>();
@@ -356,12 +359,17 @@ void handleWidget()
   {
     switchAppMode(AppMode::blockHeight);
   }
-
-  static elapsedMillis timeSinceUpdate = 5000;
-  if (timeSinceUpdate >= 5000)
+  
+  if (timeSinceWidgetUpdate >= widgetUpdateInterval)
   {
-    getWidgetScreen();
-    timeSinceUpdate = 0;
+    getWidgetIds();
+
+    if (widgetIds.size() > 0)
+    {
+      getWidgetScreen(widgetIds[0]);
+    }
+
+    timeSinceWidgetUpdate = 0;
   }
 }
 
