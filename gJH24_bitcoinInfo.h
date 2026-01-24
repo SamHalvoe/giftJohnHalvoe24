@@ -10,12 +10,40 @@
 
 const char* infoDomain = "mempool.space";
 const char* infoPathPrice = "/api/v1/prices";
-const char* infoPathBlockHeight = "/api/v1/mining/blocks/timestamp";
+const char* infoPathBlockHeight = "/api/v1/mining/blocks/timestamp/";
 
 String bitcoinPriceTimestamp = "PTsUnset";
 String bitcoinPrice = "PriUnset";
 String blockHeightTimestamp = "HTsUnset";
 String blockHeight = "HeiUnset";
+
+bool isBitcoinCertificateSet = false;
+WiFiClientSecure bitcoinInfoClient;
+
+void connectToBitcoinInfoHost()
+{
+  if (not isBitcoinCertificateSet)
+  {
+    bitcoinInfoClient.setCACert(CERTIFICATE);
+    isBitcoinCertificateSet = true;
+  }
+
+  if (not isConnectedToWifi())
+  {
+    bitcoinPrice = "PriNoWiFi";
+    blockHeight = "HeiNoWiFi";
+    return;
+  }
+
+  if (bitcoinInfoClient.connected()) return; // we are already connected
+
+  if (not bitcoinInfoClient.connect(infoDomain, 443))
+  {
+    bitcoinPrice = "PriErrCon";
+    blockHeight = "HeiErrCon";
+    return;
+  }
+}
 
 String timeStructToString(const tm* in_timeStruct, bool in_includesSeconds = false)
 {
@@ -40,18 +68,11 @@ String timeStructToString(const tm* in_timeStruct, bool in_includesSeconds = fal
 
 void updateBitcoinPrice()
 {
-  if (not isConnectedToWifi())
-  {
-    bitcoinPrice = "PriNoWiFi";
-    return;
-  }
+  connectToBitcoinInfoHost();
 
-  WiFiClientSecure client;
-  client.setCACert(CERTIFICATE);
-
-  if (not client.connect(infoDomain, 443))
+  if (not bitcoinInfoClient.connected())
   {
-    bitcoinPrice = "PriErrCon";
+    Serial.println("Error: Not connected to infoDomain!");
     return;
   }
 
@@ -59,37 +80,21 @@ void updateBitcoinPrice()
   getRequest.concat("https://");
   getRequest.concat(infoDomain);
   getRequest.concat(infoPathPrice);
-  getRequest.concat(" HTTP/1.0");
+  getRequest.concat(" HTTP/1.1");
 
-  client.println(getRequest);
-  client.print("Host: ");
-  client.println(infoDomain);
-  client.println("Connection: close");
-  client.println();
+  bitcoinInfoClient.println(getRequest);
+  bitcoinInfoClient.print("Host: ");
+  bitcoinInfoClient.println(infoDomain);
+  bitcoinInfoClient.println();
 
-  String response;
-  
-  while (client.connected())
+  while (bitcoinInfoClient.connected())
   {
-    String line = client.readStringUntil('\n');
-
-    if (line == "\r") // end of response
-    {
-      break;
-    }
-
-    response.concat(line);
-    response.concat('\n');
+    String line = bitcoinInfoClient.readStringUntil('\n');
+    if (line == "\r") break; // end of response
   }
 
-  String payload;
-
-  while (client.available())
-  {
-    payload.concat(static_cast<char>(client.read()));
-  }
-
-  client.stop();
+  String payload = bitcoinInfoClient.readStringUntil('}');
+  payload.concat('}');
 
   JsonDocument jsonDocument;
   deserializeJson(jsonDocument, payload);
@@ -114,18 +119,11 @@ void updateBitcoinPrice()
 
 void updateBlockHeight()
 {
-  if (not isConnectedToWifi())
-  {
-    blockHeight = "HeiNoWiFi";
-    return;
-  }
+  connectToBitcoinInfoHost();
 
-  WiFiClientSecure client;
-  client.setCACert(CERTIFICATE);
-
-  if (not client.connect(infoDomain, 443))
+  if (not bitcoinInfoClient.connected())
   {
-    blockHeight = "HeiErrCon";
+    Serial.println("Error: Not connected to infoDomain!");
     return;
   }
 
@@ -133,39 +131,22 @@ void updateBlockHeight()
   getRequest.concat("https://");
   getRequest.concat(infoDomain);
   getRequest.concat(infoPathBlockHeight);
-  getRequest.concat("/");
   getRequest.concat(time(nullptr));
-  getRequest.concat(" HTTP/1.0");
+  getRequest.concat(" HTTP/1.1");
 
-  client.println(getRequest);
-  client.print("Host: ");
-  client.println(infoDomain);
-  client.println("Connection: close");
-  client.println();
+  bitcoinInfoClient.println(getRequest);
+  bitcoinInfoClient.print("Host: ");
+  bitcoinInfoClient.println(infoDomain);
+  bitcoinInfoClient.println();
 
-  String response;
-
-  while (client.connected())
+  while (bitcoinInfoClient.connected())
   {
-    String line = client.readStringUntil('\n');
-
-    if (line == "\r") // end of response
-    {
-      break;
-    }
-
-    response.concat(line);
-    response.concat('\n');
+    String line = bitcoinInfoClient.readStringUntil('\n');
+    if (line == "\r") break; // end of response
   }
 
-  String payload;
-
-  while (client.available())
-  {
-    payload.concat(static_cast<char>(client.read()));
-  }
-
-  client.stop();
+  String payload = bitcoinInfoClient.readStringUntil('}');
+  payload.concat('}');
   
   JsonDocument jsonDocument;
   deserializeJson(jsonDocument, payload);

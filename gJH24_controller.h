@@ -20,25 +20,25 @@ const uint16_t QRCODE_READING_INTERVAL = 500; // ms
 elapsedMillis timeSinceQRCodeReading;
 
 const uint16_t TIME_UPDATE_INTERVAL = 500; // ms
-elapsedMillis timeSinceTimeUpdate = TIME_UPDATE_INTERVAL; // "= TIME_UPDATE_INTERVAL" >> update time after startup
+elapsedMillis timeSinceTimeUpdate;
 
 const uint16_t MIN_PRICE_UPDATE_DELAY = 10; // s
 const uint16_t PRICE_UPDATE_INTERVAL = 600; // s | 10 minutes
-elapsedSeconds timeSincePriceUpdate = PRICE_UPDATE_INTERVAL;
+elapsedSeconds timeSincePriceUpdate;
 
 const uint16_t MIN_BLOCK_HEIGHT_UPDATE_DELAY = 10; // s
 const uint16_t BLOCK_HEIGHT_UPDATE_INTERVAL = 300; // s | 5 minutes
-elapsedSeconds timeSinceBlockHeightUpdate = BLOCK_HEIGHT_UPDATE_INTERVAL;
+elapsedSeconds timeSinceBlockHeightUpdate;
 
 const uint16_t LONG_PRESS_DURATION = 1000; // ms | 1 second
 
 bool shouldSaveWiFiCredentials = false;
 
 const uint16_t CONFIG_SAVE_INTERVAL = 1200; // s | 20 minutes
-elapsedSeconds timeSinceConfigSave = CONFIG_SAVE_INTERVAL - 300; // "= CONFIG_SAVE_INTERVAL - 300" >> save config 5 minutes after wifi connection is made
+elapsedSeconds timeSinceConfigSave;
 
 uint16_t widgetUpdateInterval = 15; // s
-elapsedSeconds timeSinceWidgetUpdate = widgetUpdateInterval;
+elapsedSeconds timeSinceWidgetUpdate;
 
 size_t widgetIndex = 0;
 String currentWidgetId;
@@ -202,6 +202,11 @@ void handleConnectToWiFi()
       }
 
       configurateTime();
+      connectToBitcoinInfoHost();
+      doUpdateBitcoinPrice();
+      doUpdateBlockHeight();
+      connectToWidgetHost();
+
       switchAppMode(AppMode::clock);
     }
     else
@@ -273,7 +278,6 @@ void handleBlockHeight()
 
   if (touchInput.isLeftTapped())
   {
-    setupWidgetClient();
     getWidgetIds();
 
     if (widgetIds.size() > 0)
@@ -518,6 +522,8 @@ void handleApp(AppMode in_appMode)
     {
       turnOledOn();
     }
+
+    timeSincePriceUpdate = 0;
   }
   else if (currentAppMode == AppMode::bitcoin && timeSincePriceUpdate > 10)
   {
@@ -537,6 +543,8 @@ void handleApp(AppMode in_appMode)
     {
       turnOledOn();
     }
+
+    timeSinceBlockHeightUpdate = 0;
   }
   else if (currentAppMode == AppMode::blockHeight && timeSinceBlockHeightUpdate > 10)
   {

@@ -13,12 +13,17 @@ const char* widgetDomain = "calibre.johanneskrug.de";
 const char* widgetIdsPath = "/api/widgets/ids";
 const char* widgetPath = "/api/widgets/";
 
+bool isWidgetCertificateSet = false;
 WiFiClientSecure widgetClient;
 std::vector<String> widgetIds;
 
-void setupWidgetClient()
+void connectToWidgetHost()
 {
-  widgetClient.setCACert(CERTIFICATE_WIDGET);
+  if (not isWidgetCertificateSet)
+  {
+    widgetClient.setCACert(CERTIFICATE_WIDGET);
+    isWidgetCertificateSet = true;
+  }
 
   if (not isConnectedToWifi())
   {
@@ -36,6 +41,14 @@ void setupWidgetClient()
 
 void getWidgetIds()
 {
+  connectToWidgetHost();
+
+  if (not widgetClient.connected())
+  {
+    Serial.println("Error: Not connected to widgetDomain!");
+    return;
+  }
+
   widgetIds.clear();
 
   String getRequest = "GET ";
@@ -71,6 +84,14 @@ void getWidgetIds()
 
 void getWidgetScreen(const String& in_id)
 {
+  connectToWidgetHost();
+  
+  if (not widgetClient.connected())
+  {
+    Serial.println("Error: Not connected to widgetDomain!");
+    return;
+  }
+
   currentWidgetScreen.fill(0);
 
   String getRequest = "GET ";
