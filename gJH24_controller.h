@@ -273,6 +273,7 @@ void handleBlockHeight()
 
   if (touchInput.isLeftTapped())
   {
+    setupWidgetClient();
     getWidgetIds();
 
     if (widgetIds.size() > 0)
