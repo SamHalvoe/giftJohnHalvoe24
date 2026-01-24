@@ -40,6 +40,9 @@ elapsedSeconds timeSinceConfigSave = CONFIG_SAVE_INTERVAL - 300; // "= CONFIG_SA
 uint16_t widgetUpdateInterval = 15; // s
 elapsedSeconds timeSinceWidgetUpdate = widgetUpdateInterval;
 
+size_t widgetIndex = 0;
+String currentWidgetId;
+
 /*CredentialsListPtr mockCredentialsListPtr()
 {
   CredentialsListPtr credentialsListPtr = std::make_shared<CredentialsList>();
@@ -270,7 +273,14 @@ void handleBlockHeight()
 
   if (touchInput.isLeftTapped())
   {
-    switchAppMode(AppMode::widget);
+    getWidgetIds();
+
+    if (widgetIds.size() > 0)
+    {
+      currentWidgetId = widgetIds[0];
+      getWidgetScreen(widgetIds[widgetIndex]);
+      switchAppMode(AppMode::widget);
+    }
   }
 }
 
@@ -353,23 +363,68 @@ void handleBrightnessAdjustment()
   }
 }
 
+void matchWidgetIndexToId()
+{
+  widgetIndex = 0;
+
+  for (size_t index = 0; index < widgetIds.size(); ++index)
+  {
+    if (widgetIds[index] == currentWidgetId)
+    {
+      widgetIndex = index;
+      break;
+    }
+  }
+}
+
+void gotoNextWidget()
+{
+  if (widgetIndex < widgetIds.size() - 1)
+  {
+    ++widgetIndex;
+    currentWidgetId = widgetIds[widgetIndex];
+  }
+}
+
+void gotoPreviousWidget()
+{
+  if (widgetIndex > 0)
+  {
+    --widgetIndex;
+    currentWidgetId = widgetIds[widgetIndex];
+  }
+}
+
 void handleWidget()
 {
   if (touchInput.isRightTapped())
   {
-    switchAppMode(AppMode::blockHeight);
+    if (widgetIndex == 0)
+    {
+      switchAppMode(AppMode::blockHeight);
+    }
+    else
+    {
+      getWidgetIds();
+      matchWidgetIndexToId();
+      gotoPreviousWidget();
+      getWidgetScreen(widgetIds[widgetIndex]);
+    }
   }
   
-  if (timeSinceWidgetUpdate >= widgetUpdateInterval)
+  // ToDo: Implement updates based on  header "update-interval"!
+  /*if (timeSinceWidgetUpdate >= widgetUpdateInterval)
+  {
+    getWidgetScreen(widgetIds[widgetIndex]);
+    timeSinceWidgetUpdate = 0;
+  }*/
+
+  if (touchInput.isLeftTapped())
   {
     getWidgetIds();
-
-    if (widgetIds.size() > 0)
-    {
-      getWidgetScreen(widgetIds[0]);
-    }
-
-    timeSinceWidgetUpdate = 0;
+    matchWidgetIndexToId();
+    gotoNextWidget();
+    getWidgetScreen(widgetIds[widgetIndex]);
   }
 }
 

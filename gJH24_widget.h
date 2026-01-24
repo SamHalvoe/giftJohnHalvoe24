@@ -9,22 +9,34 @@
 #include "gJH24_def.h"
 #include "gJH24_WiFi.h"
 
-const char* widgetDomain = "clock.johanneskrug.de";
+const char* widgetDomain = "calibre.johanneskrug.de";
 const char* widgetIdsPath = "/api/widgets/ids";
 const char* widgetPath = "/api/widgets/";
 
-//WiFiClientSecure widgetClient;
+WiFiClientSecure widgetClient;
 //WiFiClient widgetClient;
 std::vector<String> widgetIds;
+
+void printTime(unsigned long in_time)
+{
+  static size_t n = 0;
+  Serial.print("t");
+  Serial.print(n++);
+  Serial.print(": ");
+  Serial.print(in_time);
+  Serial.println(" micros");
+}
 
 void setupWidgetClient()
 {
   //widgetClient.setInsecure();
-  //widgetClient.setCACert(CERTIFICATE_WIDGET);
+  widgetClient.setCACert(CERTIFICATE_WIDGET);
 }
 
 void getWidgetIds()
 {
+  elapsedMicros t;
+
   widgetIds.clear();
 
   if (not isConnectedToWifi())
@@ -33,29 +45,30 @@ void getWidgetIds()
     return;
   }
 
-  WiFiClient widgetClient;
-
-  if (not widgetClient.connect(widgetDomain, 80))
-  //if (not widgetClient.connect(widgetDomain, 443))
+  t = 0;
+  if (not widgetClient.connect(widgetDomain, 443/*80*/))
   {
     Serial.println("Error: Could not connect to widgetDomain!");
     return;
   }
+  printTime(t);
 
   String getRequest = "GET ";
-  getRequest.concat("http://");
-  //getRequest.concat("https://");
+  getRequest.concat("https://");
   getRequest.concat(widgetDomain);
   getRequest.concat(widgetIdsPath);
   getRequest.concat(" HTTP/1.1");
   //Serial.println(getRequest);
   
+  t = 0;
   widgetClient.println(getRequest);
   widgetClient.print("Host: ");
   widgetClient.println(widgetDomain);
   widgetClient.println("Connection: close");
   widgetClient.println();
+  printTime(t);
 
+  t = 0;
   String responseHeader;
   while (widgetClient.connected())
   {
@@ -64,13 +77,19 @@ void getWidgetIds()
     responseHeader.concat(line);
     responseHeader.concat('\n');
   }
-  Serial.println(responseHeader);
-  Serial.println(widgetClient.available());
+  printTime(t);
 
+  //Serial.println(responseHeader);
+  //Serial.println(widgetClient.available());
+
+  t = 0;
   String payload(widgetClient.readString());
+  printTime(t);
+
   widgetClient.stop();
   //Serial.println(payload);
 
+  t = 0;
   JsonDocument jsonDocument;
   deserializeJson(jsonDocument, payload);
   JsonArray array = jsonDocument.as<JsonArray>();
@@ -79,8 +98,9 @@ void getWidgetIds()
   {
     widgetIds.emplace_back(element.as<String>());
   }
+  printTime(t);
 
-  Serial.println(widgetIds.size());
+  //Serial.println(widgetIds.size());
 }
 
 void getWidgetScreen(const String& in_id)
@@ -92,24 +112,20 @@ void getWidgetScreen(const String& in_id)
     Serial.println("Error: No WiFi!");
     return;
   }
-  
-  WiFiClient widgetClient;
 
-  if (not widgetClient.connect(widgetDomain, 80))
-  //if (not widgetClient.connect(widgetDomain, 443))
+  if (not widgetClient.connect(widgetDomain, 443/*80*/))
   {
     Serial.println("Error: Could not connect to widgetDomain!");
     return;
   }
 
   String getRequest = "GET ";
-  getRequest.concat("http://");
-  //getRequest.concat("https://");
+  getRequest.concat("https://");
   getRequest.concat(widgetDomain);
   getRequest.concat(widgetPath);
   getRequest.concat(in_id);
   getRequest.concat(" HTTP/1.1");
-  Serial.println(getRequest);
+  //Serial.println(getRequest);
 
   widgetClient.println(getRequest);
   widgetClient.print("Host: ");
@@ -125,8 +141,8 @@ void getWidgetScreen(const String& in_id)
     responseHeader.concat(line);
     responseHeader.concat('\n');
   }
-  Serial.println(responseHeader);
-  Serial.println(widgetClient.available());
+  //Serial.println(responseHeader);
+  //Serial.println(widgetClient.available());
 
   // get payload (pixel data)
   widgetClient.readBytes(currentWidgetScreen.data(), currentWidgetScreen.size());
