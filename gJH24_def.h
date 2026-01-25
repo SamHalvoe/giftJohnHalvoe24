@@ -33,6 +33,8 @@ enum class AppMode : uint8_t
   errorWiFiCredentials,
   connectToWiFi,
   connectToWiFiFailed,
+  setupTime,
+  setupTimeFailed,
   clock,
   bitcoin,
   blockHeight,

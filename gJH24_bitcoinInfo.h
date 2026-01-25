@@ -20,6 +20,58 @@ String blockHeight = "HeiUnset";
 bool isBitcoinCertificateSet = false;
 WiFiClientSecure bitcoinInfoClient;
 
+String timeStructToString(const tm* in_timeStruct, bool in_includesSeconds = false)
+{
+  String timeString;
+
+  if (in_timeStruct->tm_hour < 10) timeString.concat('0');
+  timeString.concat(in_timeStruct->tm_hour);
+
+  timeString.concat(':');
+  if (in_timeStruct->tm_min < 10) timeString.concat('0');
+  timeString.concat(in_timeStruct->tm_min);
+
+  if (in_includesSeconds)
+  {
+    timeString.concat(':');
+    if (in_timeStruct->tm_sec < 10) timeString.concat('0');
+    timeString.concat(in_timeStruct->tm_sec);
+  }
+
+  return timeString;
+}
+
+tm timeStringToTimeStruct(const String& in_timeString) // expected format: "2022-12-31T23:30:31"
+{
+  /*Serial.println(in_timeString.substring(0, 4));
+  Serial.println(in_timeString.substring(5, 7));
+  Serial.println(in_timeString.substring(8, 10));
+  Serial.println(in_timeString.substring(11, 13));
+  Serial.println(in_timeString.substring(14, 16));
+  Serial.println(in_timeString.substring(17, 19));*/
+
+  tm timeStruct;
+  timeStruct.tm_year = in_timeString.substring(0, 4).toInt() - 1900;
+  timeStruct.tm_mon = in_timeString.substring(5, 7).toInt();
+  timeStruct.tm_mday = in_timeString.substring(8, 10).toInt();
+  timeStruct.tm_hour = in_timeString.substring(11, 13).toInt();
+  timeStruct.tm_min = in_timeString.substring(14, 16).toInt();
+  timeStruct.tm_sec = in_timeString.substring(17, 19).toInt();
+  return timeStruct;
+}
+
+// Warning: Hack! This function exists only to use mktime without it normalizing time.
+time_t timeStructToTimeT(const tm& in_timeStruct)
+{
+  tm timeStruct = in_timeStruct;
+  setenv("TZ", "GMT", 1);
+  tzset();
+  time_t timeT = mktime(&timeStruct);
+  setenv("TZ", TIME_ZONE, 1);
+  tzset();
+  return timeT;
+}
+
 void connectToBitcoinInfoHost()
 {
   if (not isBitcoinCertificateSet)
@@ -43,27 +95,6 @@ void connectToBitcoinInfoHost()
     blockHeight = "HeiErrCon";
     return;
   }
-}
-
-String timeStructToString(const tm* in_timeStruct, bool in_includesSeconds = false)
-{
-  String timeString;
-  
-  if (in_timeStruct->tm_hour < 10) timeString.concat('0');
-  timeString.concat(in_timeStruct->tm_hour);
-
-  timeString.concat(':');
-  if (in_timeStruct->tm_min < 10) timeString.concat('0');
-  timeString.concat(in_timeStruct->tm_min);
-
-  if (in_includesSeconds)
-  {
-    timeString.concat(':');
-    if (in_timeStruct->tm_sec < 10) timeString.concat('0');
-    timeString.concat(in_timeStruct->tm_sec);
-  }
-
-  return timeString;
 }
 
 void updateBitcoinPrice()
@@ -99,8 +130,8 @@ void updateBitcoinPrice()
   JsonDocument jsonDocument;
   deserializeJson(jsonDocument, payload);
   
-  time_t priceTimestap = jsonDocument["time"].as<time_t>() + GMT_OFFSET_SECONDS; // + GMT_OFFSET_SECONDS => 1 hour offset from UTC (to Berlin time)
-  bitcoinPriceTimestamp = timeStructToString(gmtime(&priceTimestap));
+  time_t priceTimestap = jsonDocument["time"].as<time_t>();
+  bitcoinPriceTimestamp = timeStructToString(localtime(&priceTimestap));
 
   switch (currentCurrency)
   {
@@ -152,6 +183,8 @@ void updateBlockHeight()
   deserializeJson(jsonDocument, payload);
 
   String heightTimestap = jsonDocument["timestamp"].as<String>();
-  blockHeightTimestamp = String(heightTimestap.substring(11, 13).toInt() + 1) + heightTimestap.substring(13, 16);
+  tm timeStruct = timeStringToTimeStruct(heightTimestap);
+  time_t timeUTC = timeStructToTimeT(timeStruct);
+  blockHeightTimestamp = timeStructToString(localtime(&timeUTC));
   blockHeight = jsonDocument["height"].as<String>();
 }

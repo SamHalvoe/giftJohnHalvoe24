@@ -19,8 +19,12 @@ CredentialsListPtr currentCredentialsListPtr;
 const uint16_t QRCODE_READING_INTERVAL = 500; // ms
 elapsedMillis timeSinceQRCodeReading;
 
-const uint16_t TIME_UPDATE_INTERVAL = 500; // ms
-elapsedMillis timeSinceTimeUpdate;
+const uint16_t TIME_UPDATE_INTERVAL = 300; // s
+elapsedSeconds timeSinceTimeUpdate;
+const uint16_t GET_LOCAL_TIME_INTERVAL = 1000; // ms
+elapsedMillis timeSinceGetTimeString;
+uint16_t timeUpdateCheckCount = 0;
+elapsedMillis timeSinceTimeUpdateCheck;
 
 const uint16_t MIN_PRICE_UPDATE_DELAY = 10; // s
 const uint16_t PRICE_UPDATE_INTERVAL = 600; // s | 10 minutes
@@ -202,12 +206,8 @@ void handleConnectToWiFi()
       }
 
       configurateTime();
-      connectToBitcoinInfoHost();
-      doUpdateBitcoinPrice();
-      doUpdateBlockHeight();
-      connectToWidgetHost();
-
-      switchAppMode(AppMode::clock);
+      switchAppMode(AppMode::setupTime);
+      return;
     }
     else
     {
@@ -216,8 +216,10 @@ void handleConnectToWiFi()
 
     if (connectionAttemptCount == 24)
     {
+      connectionAttemptCount = 0;
       disconnectFromWifi();
       switchAppMode(AppMode::connectToWiFiFailed);
+      return;
     }
 
     timeSinceWiFiConnectionCheck = 0;
@@ -225,6 +227,40 @@ void handleConnectToWiFi()
 }
 
 void handleConnectToWiFiFailed()
+{
+  if (touchInput.isMiddleTapped())
+  {
+    switchAppMode(AppMode::config);
+  }
+}
+
+void handleSetupTime()
+{
+  if (timeSinceTimeUpdateCheck >= 1000)
+  {
+    if (updateTime()) // we got current time, now we can continue
+    {
+      connectToBitcoinInfoHost();
+      doUpdateBitcoinPrice();
+      doUpdateBlockHeight();
+      connectToWidgetHost();
+      switchAppMode(AppMode::clock);
+      return;
+    }
+
+    if (timeUpdateCheckCount == 120)
+    {
+      timeUpdateCheckCount = 0;
+      switchAppMode(AppMode::setupTimeFailed);
+      return;
+    }
+
+    ++timeUpdateCheckCount;
+    timeSinceTimeUpdateCheck = 0;
+  }
+}
+
+void handleSetupTimeFailed()
 {
   if (touchInput.isMiddleTapped())
   {
@@ -320,6 +356,7 @@ int32_t getCurrentModeInteger(AppMode in_appMode)
     case AppMode::config:               return (getBatteryVoltage() <= LOW_BATTERY_VOLTAGE ? 0 : 1);
     case AppMode::errorWiFiCredentials: return isMaxCredentialCountReached;
     case AppMode::connectToWiFi:        return connectionAttemptCount;
+    case AppMode::setupTime:            return timeUpdateCheckCount;
     case AppMode::clock:                return displayIndicatorClock;
     case AppMode::bitcoin:              return displayIndicatorBitcoin;
     case AppMode::blockHeight:          return displayIndicatorBlockHeight;
@@ -466,6 +503,14 @@ void handleApp(AppMode in_appMode)
     case AppMode::connectToWiFiFailed:
       handleConnectToWiFiFailed();
       break;
+
+    case AppMode::setupTime:
+      handleSetupTime();
+      break;
+
+    case AppMode::setupTimeFailed:
+      handleSetupTimeFailed();
+      break;
     
     case AppMode::clock:
       if (not isFontSelectionActive)
@@ -510,8 +555,14 @@ void handleApp(AppMode in_appMode)
   if (timeSinceTimeUpdate >= TIME_UPDATE_INTERVAL)
   {
     updateTime();
-    getLocalTimeString();
     timeSinceTimeUpdate = 0;
+  }
+
+  if (timeSinceGetTimeString >= GET_LOCAL_TIME_INTERVAL)
+  {
+    getTime();
+    getTimeString();
+    timeSinceGetTimeString = 0;
   }
 
   if (timeSincePriceUpdate >= PRICE_UPDATE_INTERVAL)

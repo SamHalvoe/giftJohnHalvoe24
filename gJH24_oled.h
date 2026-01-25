@@ -28,6 +28,7 @@ const uint16_t OLED_UPDATE_INTERVAL = 25; // ms
 elapsedMillis timeSinceOledUpdate = OLED_UPDATE_INTERVAL;
 
 constexpr const uint16_t iconBatteryLow = 57616 + 4;
+constexpr const uint16_t iconClock = 48 + 4;
 constexpr const uint16_t iconQRCode = 48 + 6;
 constexpr const uint16_t iconFloppy = 48 + 3;
 constexpr const uint16_t iconBlockHeight = 48 + 15;
@@ -370,6 +371,29 @@ void updateScreenConnectToWiFiFailed()
   drawStringXCenter(48, "Tap middle to return;");
 }
 
+void updateScreenSetupTime(uint16_t in_checkCount)
+{
+  constexpr const uint16_t xCenter = (128 - 21) / 2;
+  oled.setFont(u8g2_font_streamline_interface_essential_alert_t);
+  oled.drawGlyph(xCenter, yOffsetIcon, iconClock);
+
+  String dots(".");
+
+  for (uint8_t index = 0; index < in_checkCount % 25; ++index)
+  {
+    dots.concat(".");
+  }
+
+  oled.setFont(u8g2_font_glasstown_nbp_tr);
+  drawStringXCenter(48, dots.c_str());
+}
+
+void updateScreenSetupTimeFailed()
+{
+  drawStringXCenter(32, "Could not retrieve time;");
+  drawStringXCenter(48, "Tap middle to return;");
+}
+
 void updateScreenErrorWiFiCredentialsFailed(int32_t in_integer)
 {
   drawStringXCenter(20, "Save WiFi credentials failed;");
@@ -606,12 +630,20 @@ void updateOled(AppMode in_appMode, const String& in_string, const String& in_st
         updateScreenErrorWiFiCredentialsFailed(in_integer);
         break;
 
+      case AppMode::connectToWiFi:
+        updateScreenConnectToWiFi(in_integer);
+        break;
+        
       case AppMode::connectToWiFiFailed:
         updateScreenConnectToWiFiFailed();
         break;
 
-      case AppMode::connectToWiFi:
-        updateScreenConnectToWiFi(in_integer);
+      case AppMode::setupTime:
+        updateScreenSetupTime(in_integer);
+        break;
+
+      case AppMode::setupTimeFailed:
+        updateScreenSetupTimeFailed();
         break;
 
       case AppMode::clock:

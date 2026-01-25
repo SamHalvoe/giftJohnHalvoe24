@@ -4,13 +4,10 @@
 #include <esp_sntp.h>
 
 const char* NTP_SERVER_NAME = "de.pool.ntp.org";
-const long GMT_OFFSET_SECONDS = 3600;
-const int DAYLIGHT_OFFSET_SECONDS = 3600;
+const char* TIME_ZONE = "CET-1CEST,M3.5.0,M10.5.0/3";
 
 bool isTimeConfigured = false;
-int lastCompleteHour = -1;
 tm timeInfo;
-
 String timeString = "TmUnset";
 
 bool updateTime()
@@ -18,21 +15,24 @@ bool updateTime()
   return isTimeConfigured && getLocalTime(&timeInfo);
 }
 
-void configurateTime()
+bool configurateTime()
 {
-  configTime(GMT_OFFSET_SECONDS, DAYLIGHT_OFFSET_SECONDS, NTP_SERVER_NAME);
+  configTzTime(TIME_ZONE, NTP_SERVER_NAME);
   isTimeConfigured = true;
-
-  updateTime();
-  lastCompleteHour = timeInfo.tm_hour;
+  return updateTime();
 }
 
-void getLocalTimeString(bool in_includesSeconds = false)
+void getTime()
+{
+  time_t timeT = time(nullptr);
+  timeInfo = *localtime(&timeT);
+}
+
+void getTimeString(bool in_includesSeconds = false)
 {
   if (not isTimeConfigured)
   {
     timeString = "TmErrCfg";
-
     return;
   }
 
