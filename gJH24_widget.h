@@ -9,7 +9,7 @@
 #include "gJH24_def.h"
 #include "gJH24_WiFi.h"
 
-const char* widgetDomain = "calibre.johanneskrug.de";
+const char* widgetDomain = "clock.johanneskrug.de";
 const char* widgetIdsPath = "/api/widgets/ids";
 const char* widgetPath = "/api/widgets/";
 

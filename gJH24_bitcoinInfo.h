@@ -76,7 +76,7 @@ void connectToBitcoinInfoHost()
 {
   if (not isBitcoinCertificateSet)
   {
-    bitcoinInfoClient.setCACert(CERTIFICATE);
+    bitcoinInfoClient.setCACert(CERTIFICATE_BITCOIN_INFO);
     isBitcoinCertificateSet = true;
   }
 
